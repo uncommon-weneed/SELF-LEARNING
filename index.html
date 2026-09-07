@@ -1,0 +1,2490 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>수어 단어 무한 셔플 & 오답노트 암기장</title>
+  <style>
+    :root {
+      --img-scale: 1;
+    }
+
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+      display: flex; 
+      flex-direction: column;
+      align-items: center; 
+      min-height: 100vh; 
+      background: #f1f5f9; 
+      margin: 0; 
+      padding: 20px 0 0 0; 
+      box-sizing: border-box; 
+    }
+    
+    .app-wrapper { 
+      display: flex; 
+      gap: 20px; 
+      width: 95%; 
+      max-width: 1180px; 
+      align-items: flex-start; 
+      margin-bottom: 30px; 
+    }
+
+    /* 사이드바 */
+    .sidebar { width: 280px; background: #fff; padding: 18px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); max-height: 88vh; display: flex; flex-direction: column; flex-shrink: 0; box-sizing: border-box; }
+    .sidebar-header { font-size: 1rem; font-weight: 700; color: #1e293b; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .sidebar-header span { font-size: 0.8rem; background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 10px; }
+    
+    /* 카테고리 선택 */
+    .category-box { background: #eff6ff; padding: 10px; border-radius: 10px; margin-bottom: 12px; border: 1px solid #bfdbfe; display: flex; flex-direction: column; gap: 6px; }
+    .category-box label { font-size: 0.8rem; font-weight: 700; color: #1e40af; }
+    .select-cat { width: 100%; padding: 7px 8px; border-radius: 8px; border: 1.5px solid #3b82f6; background: #fff; font-size: 0.85rem; font-weight: 700; color: #1e293b; outline: none; cursor: pointer; }
+    .select-cat option:disabled { color: #94a3b8; background: #f1f5f9; }
+
+    .sidebar-controls { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; font-size: 0.85rem; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; }
+    .sidebar-controls input[type="text"] { padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-size: 0.85rem; width: 100%; box-sizing: border-box; }
+    .sidebar-controls input[type="text"]:focus { border-color: #6366f1; }
+    .sidebar-actions { display: flex; gap: 5px; }
+    .sidebar-actions button { flex: 1; padding: 6px 4px; font-size: 0.75rem; font-weight: 700; border-radius: 6px; border: none; cursor: pointer; transition: 0.15s; }
+    .btn-select { background: #e2e8f0; color: #334155; }
+    .btn-select:hover { background: #cbd5e1; }
+    .btn-study-custom { background: #6366f1; color: #fff; flex: 1.2; }
+    .btn-study-custom:hover { background: #4f46e5; }
+    
+    .sidebar-opt-row { display: flex; justify-content: space-between; align-items: center; gap: 4px; font-size: 0.78rem; color: #475569; }
+    .toggle-hide-container { display: flex; align-items: center; gap: 4px; cursor: pointer; font-weight: 600; }
+    .select-order { padding: 3px 6px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.75rem; outline: none; color: #334155; }
+
+    .sidebar-list { overflow-y: auto; flex: 1; padding-right: 4px; user-select: none; position: relative; }
+    .sidebar-item { padding: 6px 8px; border-radius: 8px; margin-bottom: 4px; font-size: 0.85rem; display: flex; align-items: center; background: #f8fafc; transition: all 0.15s ease; border: 1px solid transparent; }
+    .sidebar-item:hover { background: #e2e8f0; }
+    .sidebar-item.active { background: #e0e7ff; border-color: #6366f1; font-weight: 700; color: #4338ca; }
+    
+    .checkbox-wrap { padding: 4px 6px 4px 2px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .word-text { flex: 1; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 4px 0; transition: filter 0.2s, opacity 0.2s; }
+    .word-text.blurred { filter: blur(4.5px); opacity: 0.4; }
+    .eye-btn { background: none; border: none; cursor: pointer; font-size: 1rem; padding: 0 6px; margin: 0; outline: none; transition: transform 0.1s; }
+    .eye-btn:hover { transform: scale(1.15); }
+    
+    .sidebar-badge { font-size: 0.65rem; padding: 3px 6px; border-radius: 5px; font-weight: bold; margin-left: 4px; flex-shrink: 0; cursor: pointer; transition: 0.15s; }
+    .sidebar-badge:hover { filter: brightness(0.92); transform: scale(1.05); }
+    .badge-none { background: #e2e8f0; color: #64748b; }
+    .badge-known { background: #dcfce7; color: #15803d; }
+    .badge-unknown { background: #fee2e2; color: #b91c1c; }
+    .badge-review { background: #fef3c7; color: #b45309; }
+
+    /* 모바일 높이 조절 바 */
+    .resizer-bar {
+      display: none;
+      width: 100%;
+      height: 22px;
+      cursor: row-resize;
+      user-select: none;
+      touch-action: none;
+      align-items: center;
+      justify-content: center;
+      margin: -4px 0;
+      z-index: 10;
+    }
+    .resizer-pill {
+      width: 54px;
+      height: 6px;
+      background: #94a3b8;
+      border-radius: 4px;
+      transition: background 0.15s, transform 0.15s;
+    }
+    .resizer-bar:hover .resizer-pill,
+    .resizer-bar.dragging .resizer-pill {
+      background: #4f46e5;
+      transform: scaleY(1.3);
+    }
+
+    /* 메인 카드 */
+    .card-container { background: #fff; padding: 24px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); flex: 1; text-align: center; position: relative; min-width: 0; }
+    .mode-badge-wrap { display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+    .mode-badge { display: inline-block; background: #e0e7ff; color: #4338ca; font-weight: 700; padding: 4px 12px; border-radius: 12px; font-size: 0.85rem; }
+    .mode-badge.review { background: #fef3c7; color: #b45309; }
+    .mode-badge.custom { background: #dcfce7; color: #15803d; }
+    .mode-badge.vocab { background: #f3e8ff; color: #7e22ce; }
+    
+    .progress-bar { font-size: 0.95rem; font-weight: 600; color: #64748b; margin-bottom: 12px; }
+    
+    .stats-summary { display: flex; justify-content: space-around; background: #f8fafc; padding: 10px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; margin-bottom: 10px; }
+    .stat-known { color: #16a34a; }
+    .stat-unknown { color: #dc2626; }
+    .stat-review { color: #d97706; }
+
+    /* 상단 제어바 */
+    .top-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; justify-content: center; }
+    .control-box { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.82rem; font-weight: 600; color: #475569; background: #f8fafc; padding: 7px 10px; border-radius: 10px; border: 1px solid #e2e8f0; }
+    
+    /* 모드 전환 스위치 박스 */
+    .type-switch-box { background: #f8fafc; border-color: #cbd5e1; }
+    .btn-type-toggle { border: 1px solid #cbd5e1; background: #fff; color: #475569; border-radius: 6px; padding: 4px 9px; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: 0.15s; }
+    .btn-type-toggle.active { background: #6366f1; color: #fff; border-color: #4f46e5; }
+
+    .timer-reveal-box { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+    .timer-reveal-box select { border: 1px solid #86efac; border-radius: 4px; outline: none; padding: 2px 4px; font-size: 0.8rem; background: #fff; }
+    
+    .timer-next-box { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+    .timer-next-box select { border: 1px solid #fca5a5; border-radius: 4px; outline: none; padding: 2px 4px; font-size: 0.8rem; background: #fff; }
+    
+    .timer-badge { display: inline-block; min-width: 38px; font-size: 0.85rem; font-weight: 800; padding: 1px 6px; border-radius: 4px; text-align: center; }
+    .badge-reveal-cd { background: #dcfce7; color: #15803d; }
+    .badge-next-cd { background: #fee2e2; color: #b91c1c; }
+
+    .order-box { background: #eff6ff; border-color: #bfdbfe; }
+    .btn-order-toggle { border: 1px solid #93c5fd; background: #fff; color: #1e40af; border-radius: 6px; padding: 3px 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: 0.15s; }
+    .btn-order-toggle.active { background: #3b82f6; color: #fff; border-color: #2563eb; }
+
+    .word-box { min-height: 220px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1.35rem; font-weight: 700; color: #0f172a; margin-bottom: 15px; border: 2px dashed #cbd5e1; border-radius: 14px; padding: 18px; position: relative; word-break: keep-all; line-height: 1.5; }
+    .status-tag { position: absolute; top: 10px; right: 10px; font-size: 0.75rem; padding: 3px 8px; border-radius: 6px; font-weight: bold; }
+    .tag-known { background: #dcfce7; color: #15803d; }
+    .tag-unknown { background: #fee2e2; color: #b91c1c; }
+    .tag-review { background: #fef3c7; color: #b45309; }
+
+    .answer-container { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; width: 100%; text-align: left; }
+    .desc-text { font-size: 0.95rem; font-weight: 500; color: #334155; background: #f8fafc; padding: 14px; border-radius: 10px; box-sizing: border-box; line-height: 1.55; border: 1px solid #e2e8f0; }
+    
+    .img-container { display: flex; gap: 15px; justify-content: center; width: 100%; flex-wrap: wrap; margin-top: 10px; }
+    .img-box { width: calc(260px * var(--img-scale)); height: calc(195px * var(--img-scale)); max-width: 100%; background: #ffffff; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid #cbd5e1; padding: 6px; box-sizing: border-box; box-shadow: 0 3px 8px rgba(0,0,0,0.06); transition: width 0.2s ease, height 0.2s ease; }
+    .img-box img, .img-box video { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; }
+
+    /* 국립국어원 사전 웹페이지 바로가기 버튼 */
+    .dict-link-wrap { text-align: center; margin-top: 12px; }
+    .dict-link-btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; background: #4f46e5; color: #ffffff; text-decoration: none; border-radius: 10px; font-size: 0.88rem; font-weight: 700; box-shadow: 0 3px 6px rgba(79, 70, 229, 0.25); transition: 0.15s ease; }
+    .dict-link-btn:hover { background: #4338ca; transform: translateY(-1px); }
+
+    .btn-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+    button { padding: 10px 4px; font-size: 0.85rem; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; transition: all 0.15s ease; }
+    button:hover { opacity: 0.9; transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+
+    .btn-mark-known { background: #22c55e; color: white; }
+    .btn-mark-unknown { background: #ef4444; color: white; }
+    .btn-mark-review { background: #f59e0b; color: white; }
+
+    .btn-prev { background: #64748b; color: white; }
+    .btn-reveal { background: #6366f1; color: white; }
+    .btn-next { background: #0ea5e9; color: white; }
+
+    .btn-start { background: #2563eb; color: white; width: 100%; margin-top: 6px; padding: 11px; font-size: 0.95rem; }
+    .btn-full-mode { background: #3b82f6; color: white; width: 100%; margin-top: 6px; padding: 11px; font-size: 0.9rem; }
+    .btn-review-mode { background: #8b5cf6; color: white; width: 100%; margin-top: 6px; padding: 11px; font-size: 0.9rem; }
+    .btn-pause { background: #475569; color: white; width: 100%; margin-top: 6px; padding: 10px; font-size: 0.9rem; }
+    .btn-reset { background: #94a3b8; color: white; width: 100%; margin-top: 6px; }
+
+    .shortcut-info { margin-top: 15px; font-size: 0.78rem; color: #64748b; background: #f8fafc; padding: 10px; border-radius: 8px; text-align: left; line-height: 1.5; }
+    .shortcut-info b { color: #334155; }
+
+    /* 환영 / 시작 대시보드 오버레이 */
+    .welcome-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(5px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    .welcome-card {
+      background: #ffffff;
+      padding: 34px 28px;
+      border-radius: 24px;
+      max-width: 520px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      animation: popIn 0.3s ease-out forwards;
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.92); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .welcome-badge {
+      display: inline-block;
+      background: #e0e7ff;
+      color: #4338ca;
+      font-size: 0.8rem;
+      font-weight: 800;
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+    }
+    .welcome-title {
+      margin: 0 0 14px 0;
+      color: #0f172a;
+      font-size: 1.45rem;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+    .welcome-quote-box {
+      background: #f8fafc;
+      border-left: 4px solid #6366f1;
+      padding: 14px 16px;
+      border-radius: 0 12px 12px 0;
+      margin-bottom: 22px;
+      text-align: left;
+    }
+    .welcome-quote {
+      margin: 0;
+      font-size: 0.95rem;
+      color: #334155;
+      font-weight: 600;
+      line-height: 1.6;
+      word-break: keep-all;
+    }
+    .welcome-options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 22px;
+      text-align: left;
+    }
+    .welcome-label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #475569;
+    }
+    .welcome-mode-select {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .btn-mode-choice {
+      padding: 12px 10px;
+      border-radius: 12px;
+      border: 2px solid #e2e8f0;
+      background: #f8fafc;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #475569;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+    .btn-mode-choice span {
+      font-size: 0.72rem;
+      font-weight: normal;
+      color: #64748b;
+    }
+    .btn-mode-choice.active {
+      border-color: #6366f1;
+      background: #eff6ff;
+      color: #4338ca;
+    }
+    .btn-mode-choice.active span {
+      color: #4f46e5;
+    }
+    .btn-start-app {
+      background: #4f46e5;
+      color: white;
+      width: 100%;
+      padding: 15px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-start-app:hover {
+      background: #4338ca;
+      transform: translateY(-2px);
+    }
+
+    /* 중간 결과 모달 */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+    .modal-content { background: #fff; padding: 24px; border-radius: 20px; width: 90%; max-width: 440px; text-align: center; box-shadow: 0 20px 25px rgba(0,0,0,0.15); }
+    .modal-content h2 { margin-top: 0; color: #0f172a; font-size: 1.25rem; }
+    .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f8fafc; padding: 12px; border-radius: 12px; margin: 15px 0; text-align: left; font-size: 0.9rem; }
+    .modal-unchecked-box { background: #fee2e2; border-radius: 8px; padding: 10px; max-height: 100px; overflow-y: auto; text-align: left; font-size: 0.82rem; color: #991b1b; margin-bottom: 15px; word-break: break-all; line-height: 1.4; }
+    .btn-resume { background: #6366f1; color: white; width: 100%; padding: 12px; font-size: 0.95rem; }
+
+    /* 출처 표기 반응형 푸터 */
+    .source-footer {
+      width: 100%;
+      margin-top: auto;
+      padding: 20px 16px;
+      background-color: #ffffff;
+      border-top: 1px solid #e2e8f0;
+      box-sizing: border-box;
+    }
+
+    .footer-container {
+      max-width: 1180px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 10px;
+    }
+
+    .source-text {
+      margin: 0;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      color: #64748b;
+      word-break: keep-all;
+    }
+
+    .source-text strong {
+      color: #1e293b;
+      font-weight: 600;
+    }
+
+    .badge-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .kogl-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      background-color: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #475569;
+      font-size: 0.72rem;
+      font-weight: 600;
+      border-radius: 6px;
+    }
+
+    .source-link {
+      font-size: 0.78rem;
+      color: #4f46e5;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.15s ease-in-out;
+    }
+
+    .source-link:hover {
+      text-decoration: underline;
+      color: #3730a3;
+    }
+
+    @media (min-width: 769px) {
+      .sidebar { height: auto !important; max-height: 88vh; }
+      .resizer-bar { display: none !important; }
+      .footer-container {
+        flex-direction: row;
+        justify-content: space-between;
+        text-align: left;
+      }
+      .source-text {
+        max-width: 75%;
+      }
+      .badge-wrapper {
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 5px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .app-wrapper { flex-direction: column; align-items: center; gap: 6px; margin-bottom: 20px; }
+      .sidebar { width: 100%; height: 260px; max-height: none; }
+      .resizer-bar { display: flex; }
+      .top-controls { flex-direction: column; align-items: stretch; }
+      .control-box { justify-content: space-between; }
+    }
+
+    
+  </style>
+</head>
+<body>
+
+  <!-- 첫 접속/새로고침 환영 오버레이 -->
+  <div class="welcome-overlay" id="welcomeOverlay">
+    <div class="welcome-card">
+      <div class="welcome-badge">수어교실 중급반 학습 서포터</div>
+      <h1 class="welcome-title">오늘의 수어 학습을 시작합니다 🤟</h1>
+      
+      <div class="welcome-quote-box">
+        <p class="welcome-quote" id="welcomeMessage">반가워요! 손끝으로 세상과 더 깊이 통하는 시간입니다.</p>
+      </div>
+
+      <div class="welcome-options">
+        <label class="welcome-label">학습 모드 선택</label>
+        <div class="welcome-mode-select">
+          <button type="button" class="btn-mode-choice active" id="btnChoiceTest" onclick="selectInitialStudyType('TEST')">
+            📝 시험 모드
+            <span>단어명 확인 후 정답 열기</span>
+          </button>
+          <button type="button" class="btn-mode-choice" id="btnChoiceVocab" onclick="selectInitialStudyType('VOCAB')">
+            📖 단어장 모드
+            <span>정답 처음부터 공개</span>
+          </button>
+        </div>
+      </div>
+
+      <button class="btn-start-app" onclick="enterStudyRoom()">단어장 바로 시작하기 ✨</button>
+    </div>
+  </div>
+
+  <div class="app-wrapper">
+    <!-- 좌측 사이드바 -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        단어 목록 사전
+        <span>미체크: <b id="sideUncheckedCnt">0</b>개</span>
+      </div>
+      
+      <div class="category-box">
+        <label for="catSelect">📂 학습 과목(카테고리) 선택</label>
+        <select id="catSelect" class="select-cat" onchange="changeCategory(this.value)"></select>
+      </div>
+
+      <div class="sidebar-controls">
+        <input type="text" id="searchInput" placeholder="🔍 현재 과 단어 검색..." oninput="renderSidebar()">
+        
+        <div class="sidebar-opt-row">
+          <label class="toggle-hide-container">
+            <input type="checkbox" id="globalHideCheck" onchange="toggleGlobalHide(this.checked)"> 
+            🙈 전체 마스킹
+          </label>
+
+          <div>
+            <select id="sidebarOrder" class="select-order" onchange="renderSidebar()">
+              <option value="num">번호순 정렬</option>
+              <option value="study" selected>학습순(셔플)</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="sidebar-actions">
+          <button class="btn-select" onclick="selectAllFiltered()">전체선택</button>
+          <button class="btn-select" onclick="deselectAllFiltered()">선택해제</button>
+          <button class="btn-study-custom" onclick="studySelected()">✨ 선택 학습</button>
+        </div>
+      </div>
+
+      <div class="sidebar-list" id="sidebarList"></div>
+    </div>
+
+    <!-- 모바일 전용 높이 조절 바 -->
+    <div class="resizer-bar" id="dragResizer" title="상하로 드래그하여 단어 목록 높이 조절">
+      <div class="resizer-pill"></div>
+    </div>
+
+    <!-- 우측 학습 카드 -->
+    <div class="card-container">
+      <div class="mode-badge-wrap">
+        <div class="mode-badge" id="modeName">전체 학습 모드</div>
+        <div class="mode-badge vocab" id="studyTypeBadge">📝 시험 모드</div>
+      </div>
+      <div class="progress-bar" id="progress">단어 0 / 0</div>
+      
+      <div class="stats-summary">
+        <span class="stat-known">아는 단어: <b id="cntKnown">0</b></span>
+        <span class="stat-unknown">모르는 단어: <b id="cntUnknown">0</b></span>
+        <span class="stat-review">재확인: <b id="cntReview">0</b></span>
+      </div>
+
+      <!-- 상단 분리형 제어바 -->
+      <div class="top-controls">
+        <!-- 모드 전환 (시험 모드 vs 단어장 모드) -->
+        <div class="control-box type-switch-box">
+          <span>모드:</span>
+          <button id="btnSwitchTest" class="btn-type-toggle active" onclick="setStudyType('TEST')">📝 시험</button>
+          <button id="btnSwitchVocab" class="btn-type-toggle" onclick="setStudyType('VOCAB')">📖 단어장</button>
+        </div>
+
+        <div class="control-box timer-reveal-box" id="revealTimerBox">
+          <label style="cursor:pointer;"><input type="checkbox" id="useRevealTimer" onchange="initTimers()"> ⏱️ 정답 자동 열기</label>
+          <select id="revealSecs" onchange="initTimers()">
+            <option value="1">1초</option>
+            <option value="2">2초</option>
+            <option value="3" selected>3초</option>
+            <option value="4">4초</option>
+            <option value="5">5초</option>
+            <option value="6">6초</option>
+            <option value="7">7초</option>
+            <option value="8">8초</option>
+            <option value="9">9초</option>
+            <option value="10">10초</option>
+          </select>
+          <span id="revealCountdown" class="timer-badge badge-reveal-cd">-</span>
+        </div>
+
+        <div class="control-box timer-next-box">
+          <label style="cursor:pointer;"><input type="checkbox" id="useNextTimer" onchange="initTimers()"> ⏭️ 다음 문제 자동 넘김</label>
+          <select id="nextSecs" onchange="initTimers()">
+            <option value="1">1초</option>
+            <option value="2" selected>2초</option>
+            <option value="3">3초</option>
+            <option value="4">4초</option>
+            <option value="5">5초</option>
+            <option value="6">6초</option>
+            <option value="7">7초</option>
+            <option value="8">8초</option>
+            <option value="9">9초</option>
+            <option value="10">10초</option>
+          </select>
+          <span id="nextCountdown" class="timer-badge badge-next-cd">-</span>
+        </div>
+
+        <div class="control-box order-box">
+          <span>정렬:</span>
+          <button id="btnShuffle" class="btn-order-toggle active" onclick="shuffleCurrentList()">🔀 셔플</button>
+          <button id="btnNumeric" class="btn-order-toggle" onclick="sortCurrentListNumeric()">🔢 번호순</button>
+        </div>
+
+        <div class="control-box">
+          <label for="imgScale">🔍 크기:</label>
+          <input type="range" id="imgScale" min="0.5" max="3.0" step="0.1" value="1.0" oninput="changeImgSize(this.value)">
+        </div>
+      </div>
+
+      <div class="word-box" id="display">
+        <div id="statusTag"></div>
+        <div id="wordContent">학습할 단어를 선택하거나 시작 버튼을 누르세요</div>
+      </div>
+      
+      <div class="btn-group">
+        <button class="btn-mark-known" onclick="markCurrent('known')">아는 문제 [1/A]</button>
+        <button class="btn-mark-unknown" onclick="markCurrent('unknown')">모르는 문제 [2/S]</button>
+        <button class="btn-mark-review" onclick="markCurrent('review')">재확인 [3/D]</button>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn-prev" onclick="prevWord()">이전 [Q]</button>
+        <button class="btn-reveal" id="btnReveal" onclick="toggleAnswer()">정답 [Space/W]</button>
+        <button class="btn-next" onclick="nextWord()">다음 [E]</button>
+      </div>
+
+      <button class="btn-start" onclick="startLearning()">▶️ 처음부터 새로 학습 시작 (셔플) [N]</button>
+      <button class="btn-full-mode" id="btnFullMode" onclick="returnToFullMode()" style="display: none;">🏠 전체 모드로 돌아가기 [O]</button>
+      <button class="btn-review-mode" id="btnReviewMode" onclick="startReviewMode()">✏️ 오답노트 풀기 (모름/재확인) [O]</button>
+      <button class="btn-pause" onclick="togglePauseModal()">⏸️ 중간 결과 및 미체크 문제 확인 [P]</button>
+      <button class="btn-reset" onclick="resetAll()">현재 카테고리 마킹 초기화 및 셔플 [R]</button>
+
+      <div class="shortcut-info">
+        ⌨️ <b>단축키 안내</b><br>
+        • <b>1 / A</b>: 아는 문제 | <b>2 / S</b>: 모르는 문제 | <b>3 / D</b>: 재확인 필요<br>
+        • <b>Space / W</b>: 정답/뜻 보기(시험 모드) | <b>Q / E</b>: 이전 / 다음 단어<br>
+        • <b>P</b>: 중간 결과 확인 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <b>R</b>: 현재 카테고리 초기화<br>
+        • <b>N</b>: 새로 학습 시작 (셔플) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <b>O</b>: 오답/전체 모드 전환
+      </div>
+    </div>
+  </div>
+
+  <!-- 출처 표기 반응형 푸터 -->
+  <footer class="source-footer">
+    <div class="footer-container">
+      <p class="source-text">
+        본 자료에 수록된 수어 단어명, 동작 해설, 영상 및 사진 자료는 
+        <strong>국립국어원 한국수어사전</strong>의 공공저작물을 활용하여 제작되었습니다.
+      </p>
+      <div class="badge-wrapper">
+        <span class="kogl-badge">공공누리 제1유형: 출처표시</span>
+        <a href="https://sldict.korean.go.kr" target="_blank" rel="noopener noreferrer" class="source-link">
+          국립국어원 한국수어사전 바로가기 &rarr;
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- 중간 결과 모달 -->
+  <div class="modal-overlay" id="pauseModal">
+    <div class="modal-content">
+      <h2>📊 중간 학습 결과</h2>
+      <div class="modal-grid">
+        <div>• 전체 단어: <b id="mTotal">0</b>개</div>
+        <div>• 체크 완료: <b id="mChecked">0</b>개</div>
+        <div>• 아는 단어: <b id="mKnown" style="color:#16a34a;">0</b>개</div>
+        <div>• 모르는 단어: <b id="mUnknown" style="color:#dc2626;">0</b>개</div>
+        <div>• 재확인: <b id="mReview" style="color:#d97706;">0</b>개</div>
+        <div>• 미체크(안풀음): <b id="mUnchecked" style="color:#e11d48;">0</b>개</div>
+      </div>
+
+      <div style="text-align: left; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: #475569;">
+        📌 풀지 않은(미체크) 문제 목록:
+      </div>
+      <div class="modal-unchecked-box" id="mUncheckedList">-</div>
+
+      <button class="btn-resume" onclick="togglePauseModal()">계속해서 학습하기 [P / Esc]</button>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       10가지 수어교실 중급반 랜덤 응원 문구
+       ========================================================================== */
+    const WELCOME_MESSAGES = [
+      "손끝으로 세상과 따뜻하게 마음을 잇는 시간입니다. 중급반 여러분을 환영합니다! 🤟",
+      "표정과 손짓이 풍성해질수록 여러분의 수어도 더욱 깊어집니다. 오늘도 화이팅! ✨",
+      "중급반의 실력은 꾸준한 복습에서 피어납니다. 자연스러운 손길을 위해 오늘도 전진!",
+      "익숙해진 지문자와 단어 위에 자신감을 얹어보세요. 여러분의 손길을 응원합니다. 🌟",
+      "머리로 기억하고, 손과 표정으로 완성하는 수어! 오늘도 멋진 표현 기대할게요.",
+      "농인과 농사회의 진정한 벗으로 한 걸음 더! 즐거운 마음으로 시작해 볼까요? 💡",
+      "중급 도약의 핵심은 디테일한 비수지기호와 매끄러운 연결입니다. 함께 연습해요!",
+      "망설이지 말고 손을 움직여 보세요. 연습한 만큼 여러분의 손끝은 정직하게 답합니다. 👏",
+      "오늘 익힌 수어 단어 하나가 내일의 소중한 대화를 이어줍니다. 즐겁게 학습하세요!",
+      "손끝의 작은 움직임이 누군가에게는 큰 울림이 됩니다. 중급반 여러분, 힘내세요! 🌈"
+    ];
+
+    const CATEGORIES = {
+      "cat1": {
+        title: "제12과 나라",
+        disabled: false,
+        hidden: false,
+        rawData: [
+          "1 나라, 국가, 국", "2 외국, 이국, 타국, 해외", "3 동양", "4 서양", "5 아시아",
+          "6 동남아시아", "7 유럽", "8 북아메리카", "9 남아메리카", "10 한국, 대한민국",
+          "11 중국", "12 일본", "13 미국", "14 런던", "15 러시아",
+          "16 캐나다", "17 멕시코", "18 멕시코 II", "19 필리핀", "20 필리핀II",
+          "21 인도", "22 태국", "23 태국II", "24 홍콩", "25 스페인",
+          "26 스위스", "27 이탈리아", "28 핀란드", "29 브라질", "30 도시, 도회, 시",
+          "31 시골, 촌", "32 서울", "33 경기도", "34 부산", "35 대구",
+          "36 인천", "37 광주, 광주시", "38 대전", "39 울산", "40 수원",
+          "41 강원도", "42 춘천", "43 충남", "44 청주", "45 전라남도",
+          "46 전라북도", "47 전주", "48 경남", "49 경상남도, 경남II", "50 경상북도, 경북",
+          "51 한라산"
+        ],
+        imageMap: {/* 
+          1: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151117/211337/IMG000201613_700X466.jpg"],
+          2: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151227/235783/IMG000231073_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151227/235784/IMG000231074_700X466.jpg"
+          ],
+          3: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151217/229703/IMG000223193_700X466.jpg"],
+          4: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151222/232363/IMG000226574_700X466.jpg"],
+          5: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20210104/794536/IMG000358089_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20210104/794537/IMG000358090_700X466.jpg"
+          ],
+          6: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20190726/604576/IMG000202998_700X466.jpg"],
+          7: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151117/211336/IMG000201611_700X466.jpg"],
+          8: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151224/233740/IMG000228378_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151224/233741/IMG000228379_700X466.jpg"
+          ],
+          9: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151219/230683/IMG000224471_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151219/230684/IMG000224472_700X466.jpg"
+          ],
+          10: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151118/212015/IMG000202443_700X466.jpg"],
+          11: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151229/236487/IMG000232002_700X466.jpg"],
+          12: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151211/225777/IMG000218452_700X466.jpg"],
+          13: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20190731/605625/IMG000223799_700X466.jpg"],
+          14: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151219/230768/IMG000224560_700X466.jpg"],
+          15: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151219/230735/IMG000224553_700X466.jpg"],
+          16: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151229/236568/IMG000232088_700X466.jpg"],
+          17: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151218/230131/IMG000223762_700X466.jpg"],
+          18: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151218/230130/IMG000223761_700X466.jpg"],
+          19: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151118/211851/IMG000202268_700X466.jpg"],
+          20: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151118/211850/IMG000202267_700X466.jpg"],
+          21: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151228/235935/IMG000231305_700X466.jpg"],
+          22: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151115/210196/IMG000200228_700X466.jpg"],
+          23: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151115/210195/IMG000200227_700X466.jpg"],
+          24: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151221/213766/IMG000204550_700X466.jpg"],
+          25: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151226/235054/IMG000230062_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151226/235055/IMG000230063_700X466.jpg"
+          ],
+          26: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151226/235041/IMG000230040_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151226/235042/IMG000230041_700X466.jpg"
+          ],
+          27: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151228/235816/IMG000231125_700X466.jpg"],
+          28: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151118/211840/IMG000202252_700X466.jpg"],
+          29: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151221/232118/IMG000226333_700X466.jpg"],
+          30: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151220/231358/IMG000225368_700X466.jpg"],
+          31: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151227/235271/IMG000230413_700X466.jpg"],
+          32: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20210217/813793/IMG000358494_700X466.jpg"],
+          33: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151216/228897/IMG000222156_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151216/228898/IMG000222157_700X466.jpg"
+          ],
+          34: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151223/233346/IMG000227900_700X466.jpg"],
+          35: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151219/230545/IMG000224334_700X466.jpg"],
+          36: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151228/236102/IMG000231499_700X466.jpg"],
+          37: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151216/228632/IMG000221816_700X466.jpg"],
+          38: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151219/230839/IMG000224680_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151219/230840/IMG000224681_700X466.jpg"
+          ],
+          39: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151225/234270/IMG000229116_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151225/234271/IMG000229117_700X466.jpg"
+          ],
+          40: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151222/232466/IMG000226768_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151222/232467/IMG000226769_700X466.jpg"
+          ],
+          41: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151214/227758/IMG000220729_700X466.jpg"],
+          42: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151231/238099/IMG000234044_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151231/238100/IMG000234045_700X466.jpg"
+          ],
+          43: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20160101/238254/IMG000234256_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20160101/238255/IMG000234257_700X466.jpg"
+          ],
+          44: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151230/237243/IMG000232966_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151230/237244/IMG000232967_700X466.jpg"
+          ],
+          45: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151228/236338/IMG000231801_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151228/236339/IMG000231802_700X466.jpg"
+          ],
+          46: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151228/236340/IMG000231804_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151228/236341/IMG000231805_700X466.jpg"
+          ],
+          47: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151229/236594/IMG000232132_700X466.jpg"],
+          48: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151216/229024/IMG000222312_700X466.jpg"],
+          49: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151216/229022/IMG000222310_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151216/229023/IMG000222311_700X466.jpg"
+          ],
+          50: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151216/229025/IMG000222314_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151216/229026/IMG000222315_700X466.jpg"
+          ],
+          51: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151118/212037/IMG000202477_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151118/212038/IMG000202478_700X466.jpg"
+          ] */
+        },
+        descriptions: {
+          1: "두 손의 손가락을 약간 구부려 마주 보게 세워 전후로 약간 흔든다.",
+          2: "손바닥이 밖으로 향하게 편 왼 손등에 오른 손등을 두 번 댔다 뗀 다음, 두 손의 손가락을 약간 구부려 마주 보게 세워 전후로 약간 흔든다.",
+          3: "오른 주먹의 1지를 펴서 끝이 왼쪽으로 향하게 하여 콧등을 스쳐 코 아래로 내린다.",
+          4: "오른 주먹의 1지를 펴서 옆면을 콧대의 위쪽에 댔다가 콧대를 높이 그리며 이동시켜 코밑에 댄다.",
+          5: "오른 주먹의 1지를 펴서 끝이 왼쪽으로 향하게 하여 콧등을 스쳐 코 아래로 내린 후, 오른 주먹의 5지를 펴서 끝이 왼쪽으로 손등이 안쪽으로 향하게 하여 왼쪽으로 한 바퀴 돌린다.",
+          6: "왼 주먹의 2지를 펴서 등이 밖으로 향하게 세우고, 그 등 밑에서 오른손의 1·5지 끝을 맞대어 동그라미를 만들어 손바닥이 밖으로 향하게 하여 천천히 위로 올린 다음, 두 손바닥으로 배를 스쳐 올리고, 오른 주먹의 5지를 펴서 끝이 왼쪽으로 향하게 눕혀 오른쪽으로 한 바퀴 돌린다.",
+          7: "손가락을 접고 손바닥이 밖으로 향하게 세운 오른손을 오른쪽으로 원을 그리며 이동시킨다.",
+          8: "두 주먹을 가슴 앞으로 올려 떠는 동작을 한 다음, 손등이 밖으로 향하게 손가락을 벌려 편 왼손의 5지 바닥에, 손바닥이 밖으로 향하게 손가락을 벌려 편 오른손의 5지 바닥을 댄다.",
+          9: "두 손바닥으로 배를 스쳐 올린 다음, 손등이 밖으로 향하게 편 왼손의 5지 바닥에, 손바닥이 밖으로 향하게 편 오른손의 5지 바닥을 댄다.",
+          10: "오른 손바닥을 반쯤 구부린 다음 오른 손 끝으로 오른쪽 머리 윗쪽에 한 번 대고 관자놀이에 한 번 댄 후에, 두 손의 손가락을 약간 구부려 마주 보게 세워 전후로 약간 흔든다.",
+          11: "오른 주먹의 1·5지를 펴서 오른쪽 귓불을 잡은 다음, 오른 손가락을 벌려 약간 구부려 끝으로 오른쪽 가슴을 두 번 스쳐 내린다.",
+          12: "오른 주먹의 1, 5지를 펴서 오른쪽 볼을 잡고 스쳐낸다.",
+          13: "오른 주먹의 1·2지를 펴서 눈 밑에 대고 교대로 움직인다.",
+          14: "오른손의 3·4지를 접고 1·2·5지를 펴서 턱밑에 대고 오른쪽으로 이동시킨 다음, 오른 주먹의 1·2·3지를 펴서 끝 바닥을 턱에 댄다.",
+          15: "오른 주먹의 1지를 펴서 세워 이마 오른쪽에 댔다가 뒤로 반원을 그리며 돌린다.",
+          16: "5지를 펴서 세운 오른 주먹의 바닥을 오른쪽 가슴에 댄다.",
+          17: "손등이 밖으로 향하게 1·2지를 편 두 주먹을 ‘X’자로 맞댔다가 1·2지를 구부리며 어깨 넓이로 벌린다.",
+          18: "오른 주먹의 1·2·3지를 붙여 펴서 끝 바닥을 이마에 댔다가 밖으로 뒤집어 올린다.",
+          19: "오른 손을 펴서 손끝이 위로 손바닥이 입으로 향하게 하여, 내민 혀 앞에서 왼쪽으로 두 번 돌린다.",
+          20: "오른 주먹의 1·2·5지를 펴서 5지를 2지에 대고 2지 끝이 아래로 향하게 하여 왼 손등 위쪽에서 작은 원을 그린 다음 왼 손등에 내려놓는다.",
+          21: "오른 주먹의 5지를 펴서 바닥이 위로 향하게 하여 이마 중앙에 대고 위로 올린다.",
+          22: "양손 각각 2·5지 끝을 맞대어 동그라미를 만들어 오른손은 오른쪽 어깨 앞에 왼손은 왼쪽 배 앞에 위치하여 손목을 두 번 돌린다.",
+          23: "오른 주먹의 1지를 펴서 옆면을 콧등에 댔다가 밖으로 내린다.",
+          24: "오른 주먹의 1·2지를 펴서 끝이 콧구멍을 향하게 하여 밀어 올리는 동작을 두 번 반복한다.",
+          25: "두 주먹의 1·5지를 펴서 5지 끝을 양쪽 관자놀이에 대고 세운 다음, 두 손으로 케이프(붉은천)를 잡고 좌우로 흔드는 동작을 한다.",
+          26: "오른 주먹의 1지를 펴서 끝으로 치아를 가리키고, 두 주먹의 1지로 ‘+’자 모양을 만들어 이마에 댄다.",
+          27: "오른 주먹을 머리 오른쪽에, 왼 주먹을 턱 오른쪽에 대고 손목을 돌린다.",
+          28: "오른 주먹의 1지를 펴서 약간 구부려 끝 바닥을 턱에 두 번 댄다.",
+          29: "둥글게 구부린 왼손을 모로 세우고 그 안에 오른 주먹의 1지를 펴서 넣어 돌린다.",
+          30: "손끝이 밖으로 향하게 모로 세운 두 손을 맞댔다가 오른손만 위로 올린다.",
+          31: "손바닥이 아래로 향한 왼 손등에 ‘+’자 모양이 되게 오른 손바닥을 대고 손가락을 상하로 흔든다.",
+          32: "오른 주먹의 1·2·3지를 조금 구부려 끝 바닥을 턱에 댄다.",
+          33: "오른 주먹의 1·2·3지를 펴서 끝 바닥을 턱에 댄 다음, 손끝이 밖으로 향하게 모로 세운 두 손을 마주 보게 하여 좌우로 움직이며 밖으로 내민다.",
+          34: "두 주먹의 1·5지를 펴서 바닥이 안으로 향하게 하고, 오른 주먹의 1지로 왼 주먹의 1지 위를 두 번 두드린다.",
+          35: "왼 주먹을 오른 손바닥으로 밖으로 감싸 돌린다.",
+          36: "왼 주먹의 1·5지를 펴서 1지 끝이 아래로 향하게 거꾸로 세우고, 그 오른쪽에 오른 주먹의 1·2지를 펴서 등이 밖으로 향하게 모로 세운 다음, 오른 주먹의 1·2·3지를 펴서 등이 안으로 향하게 세워 아래로 내린다.",
+          37: "오른 주먹의 1·2·3지를 펴서 구부려 바닥이 밖으로 향하게 세웠다가 펴면서 아래로 내린다.",
+          38: "오른 주먹의 1·5지를 펴서 등이 밖으로 향하게 하여 왼쪽에서 오른쪽으로 이동시킨 다음, 두 주먹의 1·2·3지를 펴서 바닥이 아래로 향하게 포개어 ‘田’(전)자 모양이 되게 한다.",
+          39: "오른 손바닥을 오른쪽 볼에 댔다가 떼면서 흔들어 올린 다음, 오른 주먹의 2지를 펴서 등이 밖으로 향하게 세운다.",
+          40: "오른 주먹의 1·5지를 펴서 구부려 입으로 약간 기울여 올린 다음, 손바닥이 아래로 향하게 반쯤 구부린 오른손을 가슴 앞에서 약간 내리다가 멈춘다.",
+          41: "왼 주먹의 2지를 펴서 등이 밖으로 향하게 세우고, 손바닥이 위로 향하게 편 오른손을 왼 손목 밑에서 오른쪽 아래로 조금씩 흔들며 내린다.",
+          42: "두 손바닥으로 배를 스쳐 올린 다음, 오른 주먹의 1·2·3지를 펴서 바닥이 밖으로 향하게 세웠다가 등이 위로 끝이 밖으로 향하게 내린다.",
+          43: "4·5지를 펴서 세운 오른 주먹의 바닥을 이마에 댄 다음, 두 손바닥으로 배를 스쳐 올린다.",
+          44: "오른손을 펴서 손등이 밖으로 향하게 세워 오른쪽에서 왼쪽으로 이동시킨 다음, 왼 주먹의 1·2·3지를 펴서 등이 밖으로 향하게 세우고, 오른 주먹의 1지를 펴서 끝으로 왼 손가락을 왼쪽에서 오른쪽으로 긋는다.",
+          45: "두 손의 손끝을 맞대고 좌우로 비스듬히 세웠다가 양옆으로 비스듬히 내린 다음, 두 손바닥으로 배를 스쳐 올린다.",
+          46: "두 손의 손끝을 맞대고 좌우로 비스듬히 세웠다가 양옆으로 비스듬히 내린 다음, 두 주먹을 가슴 앞으로 올려 떠는 동작을 한다.",
+          47: "손끝을 맞대고 좌우로 비스듬히 세운 두 손을 양옆으로 비스듬히 내린다.",
+          48: "왼 주먹의 1·5지를 펴서 1지 끝이 오른쪽으로 등이 밖으로 향하게 하고, 오른주먹의 1·5지를 펴서 1지를 왼 주먹의 5지에 5지를 왼 주먹의 1지에 댄다.",
+          49: "5지를 펴서 밖으로 구부린 왼 주먹 등을 손끝이 왼쪽으로 향하게 편 오른 손바닥으로 두 번 두드린 다음, 두 손을 펴서 손가락이 아래를 향하게 하여 배에 댔다가 위로 스쳐 올린다.",
+          50: "5지를 펴서 밖으로 구부린 왼 주먹 등을 손끝이 왼쪽으로 향하게 편 오른 손바닥으로 두 번 두드린 다음, 두 주먹을 앞으로 올려 떠는 동작을 한다.",
+          51: "왼 주먹의 2지를 펴서 등이 밖으로 향하게 세우고, 그 오른쪽 밑에 손바닥이 위로 향하게 편 오른손을 대고 1지 쪽으로 돌린 다음, 오른 주먹의 2지를 펴서 등이 밖으로 향하게 세운다."
+        },
+        combinations: {},
+        urls: {
+          1: "",
+          2: ""
+        },
+        videoMap: {
+          1: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191021/629706/MOV000235647_700X466.mp4"],
+          2: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191016/628286/MOV000256923_700X466.mp4"],
+          3: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20220801/1004863/MOV000359735_700X466.mp4"],
+          4: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191010/626192/MOV000253274_700X466.mp4"],
+          5: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20201211/785495/MOV000357141_700X466.mp4"],
+          6: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221014/1040331/MOV000360733_700X466.mp4"],
+          7: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/735100/MOV000235645_700X466.mp4"],
+          8: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221019/1042303/MOV000360952_700X466.mp4"],
+          9: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221014/1039865/MOV000360436_700X466.mp4"],
+          10: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/735010/MOV000236287_700X466.mp4"],
+          11: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221107/1049736/MOV000361259_700X466.mp4"],
+          12: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200811/727778/MOV000247108_700X466.mp4"],
+          13: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200812/728281/MOV000251004_700X466.mp4"],
+          14: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221014/1040369/MOV000360768_700X466.mp4"],
+          15: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221101/1047377/MOV000361248_700X466.mp4"],
+          16: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221101/1047318/MOV000361221_700X466.mp4"],
+          17: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221017/1041510/MOV000360794_700X466.mp4"],
+          18: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221019/1042418/MOV000360966_700X466.mp4"],
+          19: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221101/1047374/MOV000361245_700X466.mp4"],
+          20: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221101/1047290/MOV000361196_700X466.mp4"],
+          21: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221101/1047350/MOV000361228_700X466.mp4"],
+          22: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221101/1047372/MOV000361243_700X466.mp4"],
+          23: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221101/1047250/MOV000361192_700X466.mp4"],
+          24: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221018/1041782/MOV000360843_700X466.mp4"],
+          25: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221101/1047361/MOV000361238_700X466.mp4"],
+          26: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221024/1044196/MOV000361160_700X466.mp4"],
+          27: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221101/1047365/MOV000361242_700X466.mp4"],
+          28: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221101/1047314/MOV000361217_700X466.mp4"],
+          29: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221017/1041534/MOV000360801_700X466.mp4"],
+          30: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191011/626510/MOV000252311_700X466.mp4"],
+          31: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191029/632178/MOV000256391_700X466.mp4"],
+          32: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200811/727510/MOV000253280_700X466.mp4"],
+          33: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20240119/1261795/MOV000361398_700X466.mp4"],
+          34: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20240119/1261799/MOV000361402_700X466.mp4"],
+          35: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221014/1039852/MOV000360423_700X466.mp4"],
+          36: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221014/1039909/MOV000360456_700X466.mp4"],
+          37: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221018/1041766/MOV000360828_700X466.mp4"],
+          38: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221013/1039465/MOV000360387_700X466.mp4"],
+          39: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221018/1041764/MOV000360826_700X466.mp4"],
+          40: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221013/1039496/MOV000360413_700X466.mp4"],
+          41: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221013/1039476/MOV000360397_700X466.mp4"],
+          42: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221018/1041855/MOV000360908_700X466.mp4"],
+          43: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221019/1042309/MOV000360958_700X466.mp4"],
+          44: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221018/1041839/MOV000360895_700X466.mp4"],
+          45: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221019/1042424/MOV000360971_700X466.mp4"],
+          46: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221014/1040225/MOV000360663_700X466.mp4"],
+          47: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221014/1040233/MOV000360671_700X466.mp4"],
+          48: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221017/1041543/MOV000360810_700X466.mp4"],
+          49: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221019/1042423/MOV000360970_700X466.mp4"],
+          50: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221019/1042422/MOV000360969_700X466.mp4"],
+          51: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221024/1044057/MOV000361130_700X466.mp4"]
+        }
+      },
+
+"cat2": {
+        title: "제13과 동물",
+        disabled: false,
+        hidden: false,
+        rawData: [
+          "1 동물, 짐승", "2 동물원", "3 사자, 호랑이, 범", "4 호랑나비", "5 코끼리",
+          "6 기린", "7 낙타", "8 곰", "9 사슴, 순록", "10 양",
+          "11 소", "12 염소", "13 코뿔소", "14 돼지", "15 멧돼지, 산돼지",
+          "16 개, 강아지", "17 늑대, 이리", "18 여우", "19 고양이", "20 토끼",
+          "21 거북", "22 쥐", "23 뱀", "24 용", "25 악어",
+          "26 원숭이", "27 고릴라", "28 닭", "29 새", "30 오리",
+          "31 독수리", "32 제비", "33 모기", "34 벌, 꿀벌", "35 잠자리",
+          "36 나비", "37 매미", "38 곤충, 벌레", "39 개미", "40 거미",
+          "41 물고기, 생선", "42 개구리", "43 상어", "44 오징어", "45 새우",
+          "46 문어"
+        ],
+        imageMap: {/* 
+          */},
+        descriptions: {
+          1: "가슴 앞에서 두 주먹을, 손목을 돌리며 밖으로 엇갈리게 크게 돌린다.",
+          2: "가슴 앞에서 두 주먹을, 손목을 돌리며 밖으로 엇갈리게 크게 돌린 다음, 손바닥이 아래로 향하게 반쯤 구부린 오른손을 가슴 앞에서 약간 내리다가 멈춘다.",
+          3: "두 손을 약간 구부려 손가락 끝을 양쪽 뺨에 댔다가 밖으로 길게 내밀며 손가락 끝이 밖으로 향하게 한다.",
+          4: "두 손의 손가락을 약간 구부려 두 볼에 댔다가 약간 내리며 손바닥이 밖으로 향하게 돌린 다음, 손끝이 밖으로 향하게 편 두 손의 5지를 맞대고 나머지 손가락을 상하로 두 번 흔든다.",
+          5: "왼손의 1·5지로 코를 잡고 왼팔 사이로, 주먹을 쥔 오른팔을 넣어 좌우로 흔든다.",
+          6: "오른손의 2·3·5지 끝 바닥을 맞대고 세운 오른팔의 팔꿈치를 왼 손바닥으로 받치고 오른팔을 전후로 두 번 움직인다.",
+          7: "오른손 5지를 접고 나머지 손가락을 펴서 손끝이 왼쪽을 향하고 손등이 바깥쪽을 향하게 한 후, 왼쪽 팔에 반원을 두번 안쪽으로 그린다.",
+          8: "오른 주먹의 바닥을 입 앞에 대고 왼쪽으로 두 바퀴 돌린다.",
+          9: "가볍게 쥔 두 주먹을, 바닥이 밖으로 향하게 하여 머리 양쪽에 대고 교대로 올리면서 1·2지를 벌려 편다.",
+          10: "1지를 펴서 구부린 두 주먹을 머리 양쪽에 댔다가 원을 그리며 밖으로 내민다.",
+          11: "두 주먹의 1·5지를 펴서 1지 끝이 위로 향하게 하여 5지 끝을 머리 양쪽에 댄다.",
+          12: "오른 주먹을 1·5지 옆면이 턱에 닿게 대고 전후로 움직인다.",
+          13: "1지를 펴서 구부린 오른 주먹의 손목 안쪽을 코에 댄다.",
+          14: "오른손의 1·5지 끝을 맞대어 동그라미를 만들어, 손바닥이 밖으로 향하게 하여 코앞에서 왼쪽으로 두 바퀴 돌린다.",
+          15: "1지를 펴서 약간 구부린 두 주먹의 4지 옆면을 맞대어 입 앞에 댄다.",
+          16: "두 손을 자연스럽게 펴서 손바닥이 밖으로 손끝이 위로 향하게 세워 두 5지 끝을 머리 양쪽에 대고 두 손의 1·2·3·4지를 전후로 약간 흔든다.",
+          17: "오른 주먹의 1·5지를 펴고 1지 끝으로 입 오른쪽에서부터 귀 뒤로 두 번 스쳐 낸다.",
+          18: "5지와 2·3지 끝을 맞대고 1·4지를 펴서 세운 오른손을 손등이 입으로 향하게 하여 입 앞에서 왼쪽으로 두 바퀴 돌린다.",
+          19: "오른 주먹의 5지를 펴서 등이 입으로 향하게 하여 입 왼쪽으로 두 바퀴 돌린다.",
+          20: "왼 주먹의 5지를 펴서 바닥이 밖으로 향하게 세우고, 그 등에 오른 주먹의 1·2지를 펴서 등을 대고 구부렸다 폈다 한다.",
+          21: "왼 주먹의 5지를 펴서 바닥이 밖으로 향하게 하고, 그 등을 오른 손바닥으로 덮은 다음, 왼 주먹의 5지를 두번 구부렸다 편다.",
+          22: "오른 주먹의 1·2·5지를 펴서 약간 구부려 손등을 입 앞에 대고 손끝을 두 번 붙였다 뗀다.",
+          23: "손바닥이 아래로 향하게 편 왼손 밑으로, 5지를 펴서 세운 오른 주먹을 좌우로 흔들며 내민다.",
+          24: "오른 주먹을 입 앞에 댔다가 1·2지를 펴며, 좌우로 흔들며 빠르게 약간 위로 내민다.",
+          25: "손끝이 밖으로 손바닥이 위로 향하게 손가락을 붙인 왼손에 손가락을 붙인 오른손을 댔다가 크게 벌렸다가 다시 맞댄다.",
+          26: "오른 주먹의 1·2지를 펴서 바닥으로 오른뺨을 두 번 스쳐 낸다.",
+          27: "두 주먹의 바닥으로 양쪽 가슴을 두 번 번갈아 힘차게 두드린다.",
+          28: "오른손을 펴서 세워 5지를 이마에 대고 나머지 손가락을 좌우로 약간 흔든다.",
+          29: "오른 주먹의 1·5지를 펴서 손등을 입 앞에 대고 1·5지 끝을 붙인 다음, 두 손을 옆으로 벌려 상하로 흔든다.",
+          30: "오른손을 반쯤 구부리고 왼 손등으로 팔꿈치를 받쳐 세운 오른팔을 전후로 움직인다.",
+          31: "오른 주먹의 1지를 약간 구부려 끝이 밖으로 향하게 하여 등을 입에 댄 다음, 두 손을 벌려 상하로 흔든다.",
+          32: "오른손의 3·5지를 접고 나머지 손가락을 펴서 포물선을 그리며 빠르게 왼쪽으로 내민다.",
+          33: "오른손의 2지 끝을 오른뺨에 댔다가 펴고 손바닥으로 오른뺨을 살짝 때린다.",
+          34: "오른손을 펴서 손끝이 위로 손바닥이 입으로 향하게 하여, 입 앞에서 왼쪽으로 돌린 다음, 오른쪽 볼에 오른손의 2지 끝을 댔다 떼고, 손바닥을 살짝 댄다.",
+          35: "두 주먹의 1·2·5지를 펴서 두 5지 끝을 맞대고 1·2지를 동시에 상하로 흔든다.",
+          36: "손끝이 밖으로 향하게 편 두 손의 5지를 맞대고 나머지 손가락을 상하로 두 번 흔든다.",
+          37: "오른손을 구부려 오른쪽 귀 둘레에 대었다가 앞으로 두 번 내민다.",
+          38: "오른 주먹의 4지를 펴서 등이 위로 끝이 왼쪽으로 향하게 하여 구부렸다 폈다 하며 왼쪽으로 움직인다.",
+          39: "오른 손바닥으로 머리 오른쪽을 스쳐 내린 다음, 오른 주먹의 4지를 펴서 등이 위로 끝이 왼쪽으로 향하게 하여 구부렸다 폈다 하면서 왼쪽으로 움직인다.",
+          40: "오른 손바닥으로 머리 오른쪽을 스쳐 내린 다음, 오른 주먹의 4지를 펴서 구부렸다 폈다 하면서 왼쪽으로 돌린다.",
+          41: "손끝이 밖으로 향하게 펴서 모로 세운 오른손을 좌우로 움직이며 밖으로 내민다.",
+          42: "두 주먹의 바닥으로 배를 번갈아 두 번 두드린다.",
+          43: "손등이 위로 손끝이 오른쪽으로 향하게 편 왼손의 1지 옆면에 오른손을 펴서 손바닥이 왼쪽으로 향하게 대고 밖으로 내민다.",
+          44: "오른 손목 등을 턱에 대고 자연스럽게 벌려 내려뜨린 오른손의 손가락을 따로 따로 움직인다.",
+          45: "오른 주먹의 1지를 펴서 끝을 왼 손바닥에 댔다가 위로 튕기면서 굽히는 동작을 두 번 반복한다.",
+          46: "손가락을 붙인 왼 손가락 끝을, 손바닥이 아래로 향한 오른 손등에 대고 오른 손가락을 번갈아 움직인다."
+        },
+        combinations: {},
+        urls: {},
+        videoMap: {1: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191015/627643/MOV000250479_700X466.mp4"],
+          2: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200820/732318/MOV000250481_700X466.mp4"],
+          3: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/734965/MOV000254218_700X466.mp4"],
+          4: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20220729/1003318/MOV000359613_700X466.mp4"],
+          5: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191015/627710/MOV000258035_700X466.mp4"],
+          6: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20240118/1261176/MOV000361394_700X466.mp4"],
+          7: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20201211/785171/MOV000357017_700X466.mp4"],
+          8: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/734779/MOV000248460_700X466.mp4"],
+          9: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733631/MOV000254080_700X466.mp4"],
+          10: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735707/MOV000257042_700X466.mp4"],
+          11: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221107/1049736/MOV000361259_700X466.mp4"],
+          12: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200811/727778/MOV000247108_700X466.mp4"],
+          13: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20240119/1261796/MOV000361399_700X466.mp4"],
+          14: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191015/627595/MOV000250633_700X466.mp4"],
+          15: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733620/MOV000251088_700X466.mp4"],
+          16: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191007/624830/MOV000248704_700X466.mp4"],
+          17: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/734846/MOV000250588_700X466.mp4"],
+          18: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221018/1041778/MOV000360839_700X466.mp4"],
+          19: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191016/628229/MOV000250379_700X466.mp4"],
+          20: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20190918/615416/MOV000234679_700X466.mp4"],
+          21: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20201023/764372/MOV000248974_700X466.mp4"],
+          22: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735635/MOV000257822_700X466.mp4"],
+          23: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191011/626605/MOV000252907_700X466.mp4"],
+          24: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/734930/MOV000257227_700X466.mp4"],
+          25: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/735245/MOV000256281_700X466.mp4"],
+          26: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735691/MOV000255473_700X466.mp4"],
+          27: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/734946/MOV000250228_700X466.mp4"],
+          28: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191015/627572/MOV000251174_700X466.mp4"],
+          29: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191011/626501/MOV000252820_700X466.mp4"],
+          30: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735619/MOV000256469_700X466.mp4"],
+          31: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20220801/1004618/MOV000359698_700X466.mp4"],
+          32: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735755/MOV000258676_700X466.mp4"],
+          33: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191014/627205/MOV000251393_700X466.mp4"],
+          34: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200820/732258/MOV000253057_700X466.mp4"],
+          35: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735699/MOV000258477_700X466.mp4"],
+          36: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733711/MOV000248792_700X466.mp4"],
+          37: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200820/732312/MOV000250542_700X466.mp4"],
+          38: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221018/1041843/MOV000360898_700X466.mp4"],
+          39: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20201211/785131/MOV000356985_700X466.mp4"],
+          40: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20201211/785160/MOV000357006_700X466.mp4"],
+          41: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733570/MOV000250096_700X466.mp4"],
+          42: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733409/MOV000248710_700X466.mp4"],
+          43: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200820/732452/MOV000254911_700X466.mp4"],
+          44: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735658/MOV000256491_700X466.mp4"],
+          45: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200820/732253/MOV000252832_700X466.mp4"],
+          46: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/734935/MOV000250689_700X466.mp4"]
+        }
+      },
+
+      "cat3": {
+        title: "제15과 음식",
+        disabled: false,
+        hidden: false,
+        rawData: [
+          "1 맥주", "2 빵", "3 감", "4 수제비", "5 호두",
+          "6 껌", "7 잣", "8 사탕, 알사탕, 캔디", "9 잡채", "10 식빵",
+          "11 과일", "12 녹차", "13 기름", "14 재료", "15 한식",
+          "16 복숭아", "17 된장", "18 된장찌개", "19 꿀", "20 그릇",
+          "21 과자, 쿠키", "22 (맛이) 짜다", "23 밤", "24 주전자", "25 고기",
+          "26 돼지고기", "27 포도주", "28 포도", "29 사과", "30 땅콩",
+          "31 케이크", "32 당근, 홍당무", "33 팥", "34 칼, 나이프", "35 싱겁다",
+          "36 (마시는) 차", "37 커피", "38 양식", "39 짜장면", "40 고추장",
+          "41 고추", "42 딸기", "43 보리쌀, 보리", "44 대추", "45 아이스 케이크",
+          "46 칼국수", "47 고춧가루", "48 호박", "49 토마토", "50 사이다",
+          "51 떡", "52 설렁탕", "53 바나나", "54 얼음", "55 두부",
+          "56 참외", "57 멸치", "58 떡국", "59 무", "60 엿",
+          "61 국수, 면", "62 젓가락", "63 초밥", "64 부엌", "65 요리",
+          "66 술집, 주점", "67 술", "68 찹쌀", "69 안주", "70 산삼, 인삼",
+          "71 접시", "72 소금", "73 짬뽕", "74 송편", "75 스파게티",
+          "76 삼겹살", "77 와인", "78 갈비", "79 참기름", "80 담그다, 잠기다",
+          "81 콩나물", "82 수저, 숟가락", "83 콩", "84 냄비", "85 콩가루",
+          "86 통조림", "87 소고기", "88 해장국", "89 불고기", "90 레몬",
+          "91 만두", "92 반찬", "93 소주", "94 피자", "95 간장",
+          "96 보약"
+        ],
+        imageMap: {
+          /* 1: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151218/229893/IMG000223398_700X466.jpg"],
+          2: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151222/232647/IMG000227024_700X466.jpg"],
+          3: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151217/229582/IMG000223005_700X466.jpg"],
+          4: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20210217/813841/IMG000358524_700X466.jpg"],
+          5: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151121/213711/IMG000204420_700X466.jpg"],
+          6: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151217/229553/IMG000222957_700X466.jpg"],
+          7: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151116/210631/IMG000200708_700X466.jpg"],
+          8: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151223/233360/IMG000227924_700X466.jpg"],
+          9: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20190723/603683/IMG000355727_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20190723/603684/IMG000355728_700X466.jpg"
+          ],
+          10: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151227/235712/IMG000231005_700X466.jpg"],
+          11: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151215/228353/IMG000221458_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151215/228354/IMG000221459_700X466.jpg"
+          ],
+          12: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151220/231476/IMG000225505_700X466.jpg"],
+          13: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151216/228933/IMG000222213_700X466.jpg"],
+          14: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151231/237860/IMG000233740_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151231/237861/IMG000233741_700X466.jpg"
+          ],
+          15: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20210203/808874/IMG000358341_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20210203/808875/IMG000358342_700X466.jpg"
+          ],
+          16: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151223/233027/IMG000227513_700X466.jpg"],
+          17: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151218/229832/IMG000223364_700X466.jpg"],
+          18: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20201224/791296/IMG000357950_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151126/217119/IMG000208379_700X466.jpg"
+          ],
+          19: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151214/227595/IMG000220501_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151214/227596/IMG000220502_700X466.jpg"
+          ],
+          20: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151215/228112/IMG000221156_700X466.jpg"],
+          21: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151215/228355/IMG000221461_700X466.jpg"],
+          22: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151126/216876/IMG000208098_700X466.jpg"],
+          23: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151224/233409/IMG000228009_700X466.jpg"],
+          24: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151228/236227/IMG000231662_700X466.jpg"],
+          25: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151217/229306/IMG000222681_700X466.jpg"],
+          26: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151126/217108/IMG000208363_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151126/217109/IMG000208364_700X466.jpg"
+          ],
+          27: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151115/210031/IMG000200149_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151115/210032/IMG000200150_700X466.jpg"
+          ],
+          28: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151115/210030/IMG000200147_700X466.jpg"],
+          29: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151223/232818/IMG000227218_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151223/232819/IMG000227219_700X466.jpg"
+          ],
+          30: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151218/230256/IMG000224049_700X466.jpg"],
+          31: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151212/226703/IMG000219486_700X466.jpg"],
+          32: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151219/230447/IMG000224164_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151219/230448/IMG000224165_700X466.jpg"
+          ],
+          33: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151115/210454/IMG000200563_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151115/210455/IMG000200564_700X466.jpg"
+          ],
+          34: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151229/236563/IMG000232079_700X466.jpg"],
+          35: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151225/234487/IMG000229378_700X466.jpg"],
+          36: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151231/238079/IMG000234007_700X466.jpg"],
+          37: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151229/236582/IMG000232112_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151229/236583/IMG000232113_700X466.jpg"
+          ],
+          38: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151228/236048/IMG000231410_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151228/236049/IMG000231411_700X466.jpg"
+          ],
+          39: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151226/234742/IMG000229713_700X466.jpg"],
+          40: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151217/229615/IMG000223053_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151217/229616/IMG000223054_700X466.jpg"
+          ],
+          41: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151217/229509/IMG000223050_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151217/229614/IMG000223051_700X466.jpg"
+          ],
+          42: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151218/230351/IMG000224042_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151218/230352/IMG000224043_700X466.jpg"
+          ],
+          43: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151209/224419/IMG000216899_700X466.jpg"],
+          44: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151219/230849/IMG000224696_700X466.jpg"],
+          45: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151210/225167/IMG000217765_700X466.jpg"],
+          46: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151212/226698/IMG000219478_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151129/218517/IMG000210033_700X466.jpg"
+          ],
+          47: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151214/227490/IMG000220378_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151214/227491/IMG000220379_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151214/227492/IMG000220380_700X466.jpg"
+          ],
+          48: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151121/213620/IMG000204434_700X466.jpg"],
+          49: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151115/210245/IMG000200311_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151115/210246/IMG000200312_700X466.jpg"
+          ],
+          50: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151223/233294/IMG000227739_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151223/233295/IMG000227740_700X466.jpg"
+          ],
+          51: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151218/230389/IMG000224065_700X466.jpg"],
+          52: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151222/232715/IMG000227093_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151222/232716/IMG000227094_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151222/232717/IMG000227095_700X466.jpg"
+          ],
+          53: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151223/232872/IMG000227307_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151223/232873/IMG000227308_700X466.jpg"
+          ],
+          54: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151225/234241/IMG000229063_700X466.jpg"],
+          55: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151218/229966/IMG000223521_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151218/229967/IMG000223522_700X466.jpg"
+          ],
+          56: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151228/236279/IMG000231700_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151228/236280/IMG000231701_700X466.jpg"
+          ],
+          57: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151218/230392/IMG000224070_700X466.jpg"],
+          58: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151218/230390/IMG000224067_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151218/230391/IMG000224068_700X466.jpg"
+          ],
+          59: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151220/231308/IMG000225282_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20190730/605428/IMG000225283_700X466.jpg"
+          ],
+          60: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151207/223692/IMG000216067_700X466.jpg"],
+          61: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151217/229648/IMG000223102_700X466.jpg"],
+          62: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151229/236879/IMG000232513_700X466.jpg"],
+          63: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20210203/808824/IMG000358298_700X466.jpg"],
+          64: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151224/233459/IMG000228044_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151224/233460/IMG000228045_700X466.jpg"
+          ],
+          65: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151228/235926/IMG000231290_700X466.jpg"],
+          66: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151222/232724/IMG000227108_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151222/232725/IMG000227109_700X466.jpg"
+          ],
+          67: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151222/232723/IMG000227106_700X466.jpg"],
+          68: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20210203/808786/IMG000358274_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20210203/808787/IMG000358275_700X466.jpg"
+          ],
+          69: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151227/235300/IMG000230461_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151227/235301/IMG000230462_700X466.jpg"
+          ],
+          70: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151224/233671/IMG000228253_700X466.jpg"],
+          71: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151229/236876/IMG000232508_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151229/236877/IMG000232509_700X466.jpg"
+          ],
+          72: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20160412/289733/IMG000282541_700X466.jpg"],
+          73: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151122/214320/IMG000205115_700X466.jpg"],
+          74: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151221/231918/IMG000226049_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151221/231919/IMG000226050_700X466.jpg"
+          ],
+          75: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151204/221478/IMG000213439_700X466.jpg"],
+          76: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20210217/813787/IMG000358489_700X466.jpg"],
+          77: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151124/215493/IMG000206546_700X466.jpg"],
+          78: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151217/229577/IMG000222997_700X466.jpg"],
+          79: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151228/236234/IMG000231674_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151228/236235/IMG000231675_700X466.jpg"
+          ],
+          80: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151203/221307/IMG000213224_700X466.jpg"],
+          81: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151229/236984/IMG000232635_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151229/236985/IMG000232636_700X466.jpg"
+          ],
+          82: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151208/224369/IMG000216824_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151208/224370/IMG000216825_700X466.jpg"
+          ],
+          83: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151229/236980/IMG000232629_700X466.jpg"],
+          84: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151220/231073/IMG000224980_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151220/231074/IMG000224981_700X466.jpg"
+          ],
+          85: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151130/219562/IMG000211261_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151130/219563/IMG000211262_700X466.jpg"
+          ],
+          86: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151115/210341/IMG000200365_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151115/210342/IMG000200366_700X466.jpg"
+          ],
+          87: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151223/233378/IMG000227956_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151223/233379/IMG000227957_700X466.jpg"
+          ],
+          88: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151120/213267/IMG000203934_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151120/213268/IMG000203935_700X466.jpg"
+          ],
+          89: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151224/233877/IMG000228601_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151224/233878/IMG000228602_700X466.jpg"
+          ],
+          90: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151125/216573/IMG000207753_700X466.jpg"],
+          91: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151220/231292/IMG000225255_700X466.jpg"],
+          92: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151223/233248/IMG000227826_700X466.jpg"],
+          93: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151224/233604/IMG000228308_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151224/233605/IMG000228309_700X466.jpg"
+          ],
+          94: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151203/221096/IMG000212995_700X466.jpg"],
+          95: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151217/229416/IMG000222815_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151217/229417/IMG000222816_700X466.jpg"
+          ],
+          96: [
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151125/216210/IMG000207324_700X466.jpg",
+            "https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20151125/216211/IMG000207325_700X466.jpg"
+          ] */
+        },
+        descriptions: {
+          1: "오른 손가락 끝을 모아 붙여 동그라미를 만들어 4지 옆면이 밖으로 향하게 한 다음, 5지만 굽히고 1·2·3·4지를 붙여 펴서 바닥이 밖으로 향하게 세운다.",
+          2: "손바닥이 위로 향하게 편 왼 손바닥에, 오른손을 오므려 끝을 댔다가 위로 올리며 손가락을 벌린다.",
+          3: "오른 손끝을 모아 입에 대면서 입을 오므린다.",
+          4: "왼 손의 손바닥이 위로 향하게 하고, 왼손의 끝 부분을 오른손으로 떼어 내리며 벌린다.",
+          5: "오른손을, 손끝을 모아 쥐고 오른쪽 귀 가까이에서 비빈다.",
+          6: "오른 주먹의 1·5지 끝을 붙여 입 오른쪽에 두 번 댔다 뗀다.",
+          7: "오른 주먹의 1·5지를 펴서 잣을 쥐고 치아로 깨는 동작을 한다.",
+          8: "오른손의 1·5지 끝을 맞대어 동그라미를 만들어 등을 오른뺨에 대고 밖으로 돌린다.",
+          9: "두 손 각각 1·5지 끝을 맞대어 마주 보게 하여 양 옆으로 벌렸다가 1·5지를 펴면서 약간 접근시킨다.",
+          10: "왼 손바닥이 아래로 향하게 수평으로 올린 왼팔 위에서 손바닥이 아래로 향하게 편 오른손을 좌우로 흔들며 왼 손등 위까지 이동시킨다.",
+          11: "오른 손바닥으로 왼 주먹을 한 번 감싸 돌린 다음, 오른 주먹의 1·5지를 펴서 1지 끝이 밖으로 향하게 모로 세워 손목을 좌우로 흔들며 오른쪽으로 이동시킨다.",
+          12: "왼손을 펴서 손끝이 오른쪽으로 향하게 모로 세우고, 그 아래쪽을 오른손의 5지와 1·2·3·4지로 잡았다 내리는 동작을 두 번 반복한다.",
+          13: "오른 손끝을 코 오른쪽에 댔다가 떼면서 5지로 나머지 손가락을 4지부터 차례로 비빈다.",
+          14: "두 손을 구부려 손가락 등이 아래로 향하게 하고 끝으로 배 양쪽을 두 번 두드린 다음, 손끝이 밖으로 향하게 펴서 모로 세운 왼 손바닥을 오른손의 5지 바닥으로 두 번 스쳐 낸다.",
+          15: "오른손을, 손가락 등이 위로 향하게 “ㄱ”자 모양으로 구부려 머리 오른쪽과 관자놀이에 차례로 대었다가, 두 주먹 각각 1·5지를 두 번 벌렸다 붙이며 양옆으로 벌린다.",
+          16: "가볍게 쥐고 모로 세운 왼 주먹을 오른 손바닥으로 감싸 쥐고 5지 끝을 왼 주먹의 1·5지 사이에 넣었다가 위로 튕긴다.",
+          17: "손끝이 아래로 향하게 구부린 오른손의 손가락을 왼손의 5지와 1·2·3·4지 사이에 넣고 오른손이 스치도록 상하로 움직인다.",
+          18: "손끝이 아래로 향하게 구부린 오른손의 손가락을 왼손의 5지와 1·2·3·4지 사이에 넣고 오른손 등이 스치게 뺀 다음, 손바닥이 위로 향하게 펴서 약간 구부린 왼손 밑에서 같은 모양의 오른손을 두 번 오르내린다.",
+          19: "오른쪽 볼에 오른손의 2지 끝을 댔다 떼고 손바닥을 살짝 댄 다음, 오른손을 펴서 손끝이 위로 손바닥이 입으로 향하게 하여, 내민 혀 앞에서 왼쪽으로 두 바퀴 돌린다.",
+          20: "두 주먹의 1·5지를 펴서 끝을 맞대어 마주 보게 하였다가 좌우로 둥글게 올린다.",
+          21: "오른 주먹의 바닥으로 오른쪽 뺨을 두 번 두드린다.",
+          22: "오른 주먹의 4지를 펴서 끝을 오른쪽 입가에 댄다.",
+          23: "4·5지를 편 오른 주먹의 1·2·3지 등을 턱 에 대고 상하로 두 번 문지른다.",
+          24: "오른 주먹의 4·5지를 펴서 끝이 아래로 향하게 하였다가 5지 끝을 아래로 향하게 기울인다.",
+          25: "오른손의 1·5지로 왼 손등을 살짝 잡는다.",
+          26: "오른손의 1·5지 끝을 맞대어 동그라미를 만들어, 손바닥이 밖으로 향하게 하여 코앞에서 왼쪽으로 두 바퀴 돌린 다음, 오른손의 1·5지로 왼 손등을 살짝 잡는다.",
+          27: "두 손 각각 1·5지 끝을 맞대어 동그라미를 만들어 상하로 엇갈리게 흔든 다음, 오른 주먹의 1·2지를 펴서 끝이 왼쪽으로 향하게 하여 바닥을 턱에 댔다가 이마에 댄다.",
+          28: "두 손 각각 1·5지 끝을 맞대어 동그라미를 만들어 상하로 엇갈리게 흔든다.",
+          29: "오른 주먹의 1지를 펴서 옆면으로 입술 밑을 오른쪽으로 스쳐 낸 다음, 모로 세운 왼 주먹 등을 오른 손바닥으로 닦아 내린다.",
+          30: "오른 주먹의 1지를 왼손으로 감싸고, 오른손만 좌우로 돌린다.",
+          31: "오른 주먹의 1지를 펴서 바닥이 안으로 향하게 세워 수평으로 한 바퀴 돌리며 입으로 촛불을 불어 끄는 동작을 한다.",
+          32: "오른 주먹의 1지를 펴서 옆면으로 입술 밑을 오른쪽으로 스쳐 낸 다음, 두 손 각각 ‘C’모양을 만들어 오른쪽으로 기울게 하여 오른손은 위로 왼손은 아래로 이동시킨다.",
+          33: "오른 주먹의 1지를 펴서 옆면으로 입술 밑을 오른쪽으로 스쳐 낸 다음, 오른 주먹의 5지를 펴서 등을 턱에 대고 상하로 움직인다.",
+          34: "왼 주먹의 1지를 펴서 등을, 오른 주먹의 1지를 펴서 중간 바닥으로 두 번 스쳐 내린다.",
+          35: "오른 주먹의 1지를 펴서 입 오른쪽에 대고 빠는 동작을 한 다음, 자연스럽게 펴서 손바닥이 아래로 향하게 하여 힘없이 아래로 내린다.",
+          36: "왼손을 약간 구부려 모로 세우고 그 안에 오른 주먹의 1지를 펴서 넣어 젓는다.",
+          37: "오른 주먹의 1지를 펴서 끝 바닥을 코에 댄 다음, 그 끝을 둥굴게 구부려 모로 세운 왼손 안에 넣어 돌린다.",
+          38: "오른 주먹의 1지를 펴서 옆면을 콧등에 댔다가 높은 코를 그리며 이동시켜 코밑에 댄 다음, 왼 주먹의 1·2지를 펴서 등이 위로 향하게 하고 그 위에 오른 주먹의 1·2지를 펴서 모로 세워 전후로 움직인다.",
+          39: "오른 주먹의 1지를 펴서 끝이 왼쪽으로 향하게 하여 코 밑에서 구부렸다 폈다하며 오른쪽으로 이동시킨다.",
+          40: "오른 주먹의 1지를 펴서 옆면으로 입술 밑을 오른쪽으로 스쳐 낸 다음, 오른 손가락을 구부려 끝이 입으로 향하게 하여 벌린 입 앞에서 왼쪽으로 두 바퀴 돌린다.",
+          41: "오른 주먹의 1지를 펴서 옆면으로 입술 밑을 오른쪽으로 스쳐 낸 다음, 오른 주먹의 1지를 그 등 쪽에서 왼 주먹의 1·5지로 잡는다.",
+          42: "오른 주먹의 1지를 펴서 옆면으로 입술 밑을 오른쪽으로 스쳐 낸 다음, 오른손을 오므려 손끝을 코에 두 번 댄다.",
+          43: "왼손의 1·5지 끝을 맞대어 동그라미를 만든 다음, 오른 주먹의 1지를 펴서 옆면으로 왼손의 동그라미 위를 두 번 두드린다.",
+          44: "오른 주먹의 1지를 펴서 끝이 왼쪽으로 향하게 하여 입 앞에서 손가락을 돌리며 왼쪽으로 내민다.",
+          45: "오른 주먹의 1지를 펴서 끝이 왼쪽으로 향하게 하여, 내민 혀 앞에서 돌리며 좌우로 움직인다.",
+          46: "왼 주먹의 1지를 펴서 등을, 오른 주먹의 1지를 펴서 중간 바닥으로 두 번 스쳐 내린 다음, 두 주먹의 1·2지를 벌려 펴서 두 번 입으로 올린다.",
+          47: "오른 주먹의 1지를 펴서 옆면으로 입술 밑을 오른쪽으로 스쳐내고 오른 주먹의 1지를 등 쪽에서 왼 주먹의 1·5지로 잡은 다음, 손등이 안으로 향하게 편 두 손 각각 1·5지 끝을 맞대고 비빈다.",
+          48: "왼손을 오므려 끝이 위로 향하게 하고 그 끝에 오른 주먹의 1지를 펴서 끝이 아래로 향하게 하여 대고 손목을 돌린다.",
+          49: "오른 주먹의 1지를 펴서 옆면으로 입술 밑을 오른쪽으로 스쳐 낸 다음, 손끝을 맞대어 끝을 입에 대고 빨아들이는 동작을 한다.",
+          50: "오른 주먹의 1지를 펴서 끝으로 치아를 가리킨 다음, 모로 세운 왼 주먹 위에 오른 주먹의 1·2지를 펴서 바닥을 대고 위로 기울여 올린다.",
+          51: "가볍게 쥔 왼 주먹의 1·5지 속을 오른 주먹의 1지를 펴서 구부려 끝으로 콕콕 찍는다.",
+          52: "오른 주먹의 1지를 펴서 끝으로 치아를 가리키고, 두 손을 펴서 손바닥이 아래로 향하게 하여 내리면서 손가락을 번갈아 흔든 다음, 왼손을 펴서 손바닥이 위로 향하게 오므리고, 그 위에서 손바닥이 위로 향하게 편 오른손을 왼쪽으로 두 바퀴 돌린다.",
+          53: "오른 주먹의 1지를 펴서 끝으로 치아를 스쳐 낸 다음, 왼 손가락을 길게 하여 모아 끝이 위로 향하게 세우고, 그 끝에 오른손을 손끝을 모아 댔다가 내린다.",
+          54: "오른 주먹의 1지를 펴서 끝으로 치아를 가리킨 다음, 구부린 두 손의 손바닥이 안으로 향하게 하여 깍지 끼우고 좌우로 움직인다.",
+          55: "오른 주먹의 1지를 펴서 끝으로 치아를 가리킨 다음, 5지와 1·2지 사이를 약간 벌린 두 손의 손가락을 서로 마주 보게 하여 부드럽게 두 번 굽혔다 편다.",
+          56: "오른 주먹의 1지를 펴서 끝으로 치아를 스쳐 낸 다음, 손가락을 모아 끝이 위로 향하게 쥔 왼손의 5지 옆면을 오른 주먹의 1지 옆면으로 두 번 스쳐 내린다.",
+          57: "오른 주먹의 1지를 펴서 손가락 사이가 약간 벌어지게 편 왼손의 1지와 2지 사이에 넣고 두 번 굽혔다 편다.",
+          58: "가볍게 쥔 왼 주먹의 1·5지 속을 오른 주먹의 1지를 펴서 구부려 끝으로 콕콕 찍은 다음, 왼손을 펴서 손바닥이 위로 향하게 오므리고, 그 위에서 손바닥이 위로 향하게 편 오른손을 두 바퀴 돌린다.",
+          59: "오른 주먹의 1지를 펴서 끝으로 치아를 가리킨 다음, 두 손을 약간 구부려 오른손이 위에 놓이게, 오른쪽으로 기울게 이어 대고 비스듬히 벌린다.",
+          60: "오른 주먹의 1·2지를 펴서 끝이 밖으로 향하게 하여 두 번 붙였다 뗀다.",
+          61: "두 주먹의 1·2지를 벌려 펴서 두 번 입으로 올린다.",
+          62: "오른 주먹의 1·2지를 펴서 벌려 끝이 아래로 향하게 하였다가 올리며 1·2지를 맞댄다.",
+          63: "오른 주먹의 1·2지를 펴서 주먹 쥔 왼손 1·2·3·4지의 두번째 마디에 두 번 댄다.",
+          64: "왼 주먹의 1·2지를 펴서 끝이 오른쪽으로 등이 위로 향하게 하고 그 등에 오른 주먹의 1·2지를 펴서 모로 세워 대고 전후로 움직인 다음, 손바닥이 아래로 향하게 반쯤 구부린 오른손을 가슴 앞에서 약간 내리다가 멈춘다.",
+          65: "왼 주먹의 1·2지를 펴서 등이 위로 향하게 하고, 그 위에 오른 주먹의 1·2지를 펴서 모로 세워 전후로 움직인다.",
+          66: "오른 주먹의 1·2지를 펴서 끝이 왼쪽으로 향하게 하여 바닥을 턱에 댔다가 이마에 댄 다음, 두 손의 손끝을 맞대어 좌우로 비스듬히 세운다.",
+          67: "오른 주먹의 1·2지를 펴서 끝이 왼쪽으로 향하게 하여 바닥을 턱에 댔다가 이마에 댄다.",
+          68: "오른 주먹의 2지를 1지 위에 올리고 1지 옆면으로 입 오른쪽을 두드린 다음, 오른손의 2지 끝을 5지 끝에 두 번 튕겨 치아에 댄다.",
+          69: "오른 주먹의 1·2지를 펴서 끝이 왼쪽으로 향하게 하여 바닥을 턱에 댔다가 이마에 댄 다음, 두 주먹의 1·5지를 펴서 끝이 밖으로 향하게 하여 두 번 벌렸다 붙이며 양옆으로 벌린다.",
+          70: "오른 주먹의 1·2지를 펴서 2지 바닥을 1지 손톱에 대고 끝이 위로 향하게 한다.",
+          71: "오른 주먹의 1·2지를 펴서 등으로 왼 손바닥을 두 번 튕겨 댄 다음, 두 손을 펴서 손바닥이 위로 향하게 하여 4지 옆면을 맞댔다가 떼면서 위로 반원을 그리며 올린다.",
+          72: "오른 주먹의 1지를 펴서 반쯤 구부리고 2지를 펴서 그 바닥이 치아로 향하게 하여 좌우로 두 번 움직인다.",
+          73: "오른 주먹의 2지를 펴서 등이 위로 끝이 위쪽으로 향하게 비스듬히 세워 두 번 당긴다.",
+          74: "오른 주먹의 1·2지를 펴서 구부려 끝을 오른쪽 볼에 댄 다음, 손끝을 맞대고 끝이 위로 등이 밖으로 향하게 세운 왼손의 손끝에 4·3·2·1지 순으로 오른손의 1·5지 끝을 맞댔다 뗀다.",
+          75: "오른 주먹의 1․2․3지를 펴서 끝을 왼 손바닥에 대고 오른쪽으로 2회 돌린다.",
+          76: "1·2·3지를 벌려 편 오른손의 3지 끝으로 손바닥이 위로 향하게 편 왼손의 손바닥을 두 번 친다.",
+          77: "오른 주먹의 1·2·3지를 펴서 끝이 위로 향하게 하여 오른쪽 볼 옆에서 옆으로 한 바퀴 돌린다.",
+          78: "두 손을 펴서 5지를 접고 나머지 손가락을 약간 구부려 가슴 중앙에 댔다가 양옆으로 벌린다.",
+          79: "손바닥이 왼쪽으로 향하게 펴서 세운 오른손을 턱에 댄 다음, 손끝을 코 오른쪽에 댔다가 떼면서 5지로 나머지 손가락을 4지부터 차례로 비빈다.",
+          80: "손등이 위로 향하게 편 왼손의 손끝 오른쪽에서 5지를 펴서 세운 오른 주먹을 아래로 내린다.",
+          81: "오른 주먹의 5지를 펴서 등을 턱에 대고 상하로 움직인 다음, 오른 주먹의 1지를 펴서 세웠다가 구부린다.",
+          82: "오른 주먹의 5지를 펴서 끝 바닥이 위로 향하게 하여 끝을 살짝 문 다음, 오른 주먹을 입으로 두 번 돌려 올린다.",
+          83: "오른 주먹의 5지를 펴서 등을 턱에 대고 상하로 움직인다.",
+          84: "오른 주먹의 5지를 펴서 끝 바닥이 위로 향하게 하여 끝을 살짝 문 다음, 두 주먹의 1·5지를 펴서 두 귀뿌리를 동시에 잡는다.",
+          85: "오른 주먹의 5지를 펴서 등을 턱에 대고 상하로 움직인 다음, 손등이 안으로 향하게 편 두 손 각각 1·5지 끝을 맞대고 비빈다.",
+          86: "오른 주먹의 5지를 펴서 끝 바닥이 위로 향하게 하여 살짝 문 다음 왼손을 둥글게 쥐고 모로 세우고, 오른 주먹의 1·5지 끝을 전후로 약간 움직이며 왼손의 1지 옆면을 따라 안으로 이동시킨다.",
+          87: "두 주먹의 1·5지를 펴서 1지 끝이 위로 향하게 하여 5지 끝을 머리 양쪽에 댄 다음, 오른손의 1·5지로 왼 손등을 살짝 잡는다.",
+          88: "오른 주먹의 1·5지를 펴서 1지 끝을 목 오른쪽에 댔다가 뗀 다음, 약간 구부린 왼손 위에서 손바닥이 위로 향하게 편 오른손을 왼쪽으로 두 바퀴 돌린다.",
+          89: "두 주먹의 1·5지를 펴서 5지를 머리 양쪽에 대고 1지가 위로 향하게 한 다음, 두 주먹의 1·2지를 펴서 끝이 밖으로 향하게 하여 좌우로 뒤집는 동작을 두 번 반복한다.",
+          90: "오른 주먹의 1‧5지를 펴서 바닥이 밖으로 향하게 하여 5지 끝을 입 오른쪽에 두 번 댄다.",
+          91: "손끝을 맞대고 끝이 위로, 등이 밖으로 향하게 세운 왼손의 손끝 위에서 4지부터 1지까지 오른손의 1·5지 끝을 맞댔다 뗐다 한다.",
+          92: "두 주먹 각각 1·5지를 두 번 벌렸다 붙이며 양옆으로 벌린다.",
+          93: "오른 주먹의 1·5지를 펴서 코를 잡은 다음, 오른 주먹의 1·2지를 펴서 바닥을 턱에 댔다가 이마에 댄다.",
+          94: "오른 주먹의 1․2․5지를 펴서 5지 바닥을 2지 옆면에 대고 2지 끝이 아래로 향하게 하여 전후로 한 번 긋고, 좌우로 한 번 긋는다.",
+          95: "오른 손바닥으로 머리 오른쪽을 스쳐 내린 다음, 오른 주먹의 4지를 펴서 끝을 오른쪽 입가에 댄다.",
+          96: "오른 손바닥을 왼뺨에 대고 두 바퀴 돌린 다음, 오른손의 2지로, 손바닥이 위로 향하게 편 왼 손바닥을 전후로 두 번 문지른다."
+        },
+        combinations: {},
+        urls: {},
+        videoMap: {
+          1: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191016/628088/MOV000250671_700X466.mp4"],
+          2: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191014/627313/MOV000253637_700X466.mp4"],
+          3: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191014/627246/MOV000250355_700X466.mp4"],
+          4: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20201211/785420/MOV000357078_700X466.mp4"],
+          5: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733695/MOV000237665_700X466.mp4"],
+          6: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191014/627236/MOV000250317_700X466.mp4"],
+          7: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735460/MOV000234993_700X466.mp4"],
+          8: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191028/632067/MOV000254364_700X466.mp4"],
+          9: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200820/732473/MOV000258604_700X466.mp4"],
+          10: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191015/627689/MOV000256871_700X466.mp4"],
+          11: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191017/628475/MOV000249146_700X466.mp4"],
+          12: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191029/632478/MOV000252428_700X466.mp4"],
+          13: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191028/631970/MOV000249730_700X466.mp4"],
+          14: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191029/632329/MOV000259059_700X466.mp4"],
+          15: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200820/732501/MOV000236328_700X466.mp4"],
+          16: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20201023/764379/MOV000254033_700X466.mp4"],
+          17: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200820/732266/MOV000250643_700X466.mp4"],
+          18: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20201210/784487/MOV000356911_700X466.mp4"],
+          19: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20201211/785156/MOV000357003_700X466.mp4"],
+          20: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191007/625075/MOV000248906_700X466.mp4"],
+          21: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191004/624434/MOV000249148_700X466.mp4"],
+          22: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20160924/347145/MOV000302165_700X466.mp4"],
+          23: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191021/629694/MOV000254436_700X466.mp4"],
+          24: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221019/1042464/MOV000360986_700X466.mp4"],
+          25: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191011/626539/MOV000250094_700X466.mp4"],
+          26: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221021/1043233/MOV000361103_700X466.mp4"],
+          27: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20201210/784454/MOV000356887_700X466.mp4"],
+          28: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20190918/615428/MOV000234554_700X466.mp4"],
+          29: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191028/632066/MOV000253800_700X466.mp4"],
+          30: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/735058/MOV000251208_700X466.mp4"],
+          31: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191028/632028/MOV000247744_700X466.mp4"],
+          32: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221014/1040167/MOV000360644_700X466.mp4"],
+          33: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/735030/MOV000234890_700X466.mp4"],
+          34: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191025/630738/MOV000257730_700X466.mp4"],
+          35: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191022/630041/MOV000255526_700X466.mp4"],
+          36: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191022/629981/MOV000259275_700X466.mp4"],
+          37: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191021/629529/MOV000257758_700X466.mp4"],
+          38: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191021/629528/MOV000257187_700X466.mp4"],
+          39: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191016/628298/MOV000255805_700X466.mp4"],
+          40: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733279/MOV000250395_700X466.mp4"],
+          41: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733275/MOV000250393_700X466.mp4"],
+          42: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191015/627577/MOV000251202_700X466.mp4"],
+          43: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/735171/MOV000245996_700X466.mp4"],
+          44: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/734822/MOV000251744_700X466.mp4"],
+          45: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191007/625159/MOV000246580_700X466.mp4"],
+          46: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191007/625147/MOV000247738_700X466.mp4"],
+          47: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221020/1042802/MOV000361045_700X466.mp4"],
+          48: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733696/MOV000237677_700X466.mp4"],
+          49: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20201210/784423/MOV000356878_700X466.mp4"],
+          50: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191029/632231/MOV000254212_700X466.mp4"],
+          51: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/735059/MOV000251224_700X466.mp4"],
+          52: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191028/631876/MOV000253697_700X466.mp4"],
+          53: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221018/1041951/MOV000360926_700X466.mp4"],
+          54: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191016/628343/MOV000255269_700X466.mp4"],
+          55: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191016/628117/MOV000250771_700X466.mp4"],
+          56: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191015/627691/MOV000257421_700X466.mp4"],
+          57: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/734919/MOV000251228_700X466.mp4"],
+          58: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191015/627598/MOV000251226_700X466.mp4"],
+          59: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191011/626379/MOV000252239_700X466.mp4"],
+          60: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191015/627637/MOV000260404_700X466.mp4"],
+          61: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191015/627612/MOV000250427_700X466.mp4"],
+          62: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191011/626543/MOV000258086_700X466.mp4"],
+          63: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735670/MOV000243100_700X466.mp4"],
+          64: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191021/629530/MOV000254464_700X466.mp4"],
+          65: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191021/629455/MOV000257092_700X466.mp4"],
+          66: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221014/1039860/MOV000360431_700X466.mp4"],
+          67: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191015/627480/MOV000253707_700X466.mp4"],
+          68: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20201211/785418/MOV000357076_700X466.mp4"],
+          69: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221020/1042630/MOV000361011_700X466.mp4"],
+          70: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191021/629459/MOV000254637_700X466.mp4"],
+          71: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191016/628204/MOV000258082_700X466.mp4"],
+          72: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20160325/290039/MOV000282540_700X466.mp4"],
+          73: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200820/732042/MOV000238151_700X466.mp4"],
+          74: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221020/1042621/MOV000361005_700X466.mp4"],
+          75: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191007/624845/MOV000243616_700X466.mp4"],
+          76: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200820/732166/MOV000244840_700X466.mp4"],
+          77: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735498/MOV000239059_700X466.mp4"],
+          78: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200820/732514/MOV000250349_700X466.mp4"],
+          79: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221014/1039901/MOV000360450_700X466.mp4"],
+          80: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221014/1040031/MOV000360570_700X466.mp4"],
+          81: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20201211/785540/MOV000357185_700X466.mp4"],
+          82: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191015/627479/MOV000259697_700X466.mp4"],
+          83: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191016/628079/MOV000258175_700X466.mp4"],
+          84: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191014/627263/MOV000251982_700X466.mp4"],
+          85: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221020/1042778/MOV000361028_700X466.mp4"],
+          86: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20201210/784455/MOV000356888_700X466.mp4"],
+          87: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191029/632318/MOV000254392_700X466.mp4"],
+          88: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733449/MOV000237296_700X466.mp4"],
+          89: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191022/630019/MOV000254909_700X466.mp4"],
+          90: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200825/735492/MOV000239809_700X466.mp4"],
+          91: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191101/633240/MOV000252216_700X466.mp4"],
+          92: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191018/628700/MOV000254280_700X466.mp4"],
+          93: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221019/1042305/MOV000360954_700X466.mp4"],
+          94: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191007/624868/MOV000243318_700X466.mp4"],
+          95: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191016/628111/MOV000250200_700X466.mp4"],
+          96: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221021/1043196/MOV000361088_700X466.mp4"]
+        }
+      },
+      
+"cat4": {
+        title: "제16과 직업",
+        disabled: false,
+        hidden: false,
+        rawData: [
+          "1 노동", "2 공공시설", "3 회장, 사장", "4 기업, 회사", "5 회사원",
+          "6 변호사", "7 검사", "8 판사", "9 군인, 군사, 병사", "10 육군",
+          "11 공군", "12 해군", "13 상인", "14 어부", "15 농부",
+          "16 광부", "17 기술자", "18 화가", "19 디자이너, 도안자, 설계사", "20 인쇄",
+          "21 인쇄소", "22 극장", "23 영화", "24 한복", "25 목공",
+          "26 용접", "27 기계, 장치", "28 전기", "29 보수, 수리, 수선", "30 건축가",
+          "31 건설, 건축", "32 미용", "33 미용사", "34 제화", "35 가수",
+          "36 광고", "37 취업, 취직", "38 면접", "39 월급쟁이", "40 월급",
+          "41 상여금, 보너스", "42 수당", "43 대궐, 궁궐, 궁전", "44 묘지, 무덤", "45 방송국",
+          "46 신문사", "47 소방서", "48 경찰서", "49 우체국", "50 법원, 재판소",
+          "51 대법원", "52 세무서", "53 은행, 금융", "54 한국은행, 한은", "55 시청",
+          "56 동사무소, 동주민센터", "57 책방, 서점", "58 서점, 책방 II", "59 시장, 장, 매점", "60 장사, 가게, 상점, 시장",
+          "61 백화점", "62 호텔", "63 여관", "64 카페"
+        ],
+        imageMap: {},
+        descriptions: {
+          1: "손바닥이 위로 향하게 편 두 손을 양옆으로 붙였다 벌리는 동작을 두 번 반복한다.",
+          2: "비스듬히 세운 왼손 밑에 오른손으로 ‘ム’ 모양을 그린 다음, 두 손을 펴서 손끝이 밖으로 향하게 하여 바닥이 마주 보게 세웠다가 위로 올려 가운데로 돌려 5지 옆면을 맞댄다.",
+          3: "두 주먹의 1·2지를 펴서 반쯤 구부려 어깨 위에서 전후로 엇갈리게 움직인 다음, 오른주먹의 5지를 펴서 세운다.",
+          4: "두 주먹의 1·2지를 펴서 반쯤 구부려 어깨 위에서 전후로 엇갈리게 움직인다.",
+          5: "두 주먹의 1·2지를 펴서 반쯤 구부려 어깨 위에서 전후로 엇갈리게 움직인 다음, 두 주먹의 4·5지를 펴서 끝이 위로 향하게 맞대고 세워 양옆으로 벌린다.",
+          6: "오른 주먹의 5지를 펴서 세워 입 앞에서 좌우로 돌려 흔든 다음, 두 주먹의 5지를 펴서 세워 가슴 앞에서 약간 내린다.",
+          7: "오른 주먹의 1·2지를 약간 구부려 끝이 두 눈으로 향하게 하여 왼쪽으로 돌린 다음, 두 주먹의 5지를 펴서 세워 동시에 아래로 내린다.",
+          8: "바닥이 밖으로 향하게 쥔 오른 주먹을 두 번 밖으로 돌려 내린 다음, 두 주먹을 5지를 펴서 세워 가슴 앞에서 약간 내린다.",
+          9: "두 주먹을 오른쪽 가슴에 오른 주먹이 위에 놓이게 상하로 이어 댄 다음, 두 주먹의 4·5지를 펴서 끝이 위로 향하게 맞대고 세워 좌우로 두 번 약간 돌리며 벌린다.",
+          10: "두 손 각각 손끝을 모아 대고 비빈 다음, 두 주먹을 오른쪽 가슴에 오른 주먹이 위에 놓이게 이어 댄다.",
+          11: "오른 주먹의 4·5지를 펴서 등이 위로 향하게 하여 왼쪽 위로 짧게 내민 다음, 두 주먹을 오른쪽 가슴에 오른 주먹이 위에 놓이게 상하로 이어 댄다.",
+          12: "오른 주먹의 4지를 펴서 끝을 오른쪽 입가에 댄 후에 두 손을 펴서 손바닥이 밑으로 손끝이 밖으로 향하게 하여 상하로 약간 움직이며 왼쪽에서 오른쪽으로 이동시키고 두 주먹을 오른쪽 가슴에 오른 주먹이 위에 놓이게 상하로 이어 댄다.",
+          13: "두 손을, 1·5지 끝을 맞대어 동그라미를 만들어 가슴 앞에서 전후로 엇갈리게 움직인 다음, 두 주먹의 4·5지를 펴서 끝이 위로 향하게 맞대고 세워 양옆으로 벌린다.",
+          14: "손끝이 밖으로 향하게 펴서 모로 세운 오른손을 약간 좌우로 움직이며 밖으로 내밀고, 왼 주먹의 5지를 펴서 세우고, 오른손으로 왼 주먹의 5지를 감싸 잡은 다음, 두 주먹의 4·5지를 펴서 끝이 위로 향하게 맞대고 세워 양옆으로 두 번 약간 돌리며 벌린다.",
+          15: "두 주먹의 1·2·3지를 펴서 바닥이 아래로 향하게 하여 직각이 되게 포갠 다음, 두 주먹의 4·5지를 펴서 끝이 위로 향하게 맞대고 세워 좌우로 두 번 약간 돌리며 벌린다.",
+          16: "왼 주먹의 2·5지를 펴서 등이 밖으로 향하게 세우고, 그 밑에서 오른손을 구부려 끝으로 땅을 파는 동작을 한 다음, 두 주먹의 4·5지를 펴서 끝이 위로 향하게 맞대고 세워 좌우로 벌린다.",
+          17: "오른손의 1·5지 끝을 맞대어 동그라미를 만들어 5지 손톱이 닿게 이마 중앙에 두 번 댔다 뗀 다음, 두 주먹의 4·5지를 펴서 끝이 위로 향하게 맞대고 세워 좌우로 두 번 약간 돌리며 벌린다.",
+          18: "오른 손가락 등으로 왼 손바닥을 오른쪽으로 두 번 스쳐 낸 다음, 두 주먹의 4·5지를 펴서 끝이 위로 향하게 맞대고 세워 양옆으로 두 번 약간 돌리며 벌린다.",
+          19: "오른 주먹의 4지를 펴서 끝 바닥으로 손등이 위로 향하게 편 왼손의 4지 옆면을 오른쪽으로 스쳐 낸 다음, 두 주먹의 4·5지를 펴서 끝이 위로 향하게 맞대고 세워 양옆으로 벌린다.",
+          20: "왼손을 손바닥이 위로 손끝이 오른쪽으로 향하게 하고, 그 위에서 오른손을 손바닥이 아래로 손끝이 왼쪽으로 향하게 하여 두 번 들었다 내린다.",
+          21: "왼손을 펴서 손바닥이 위로 손끝이 오른쪽으로 향하게 하고, 그 위에 오른손을 펴서 손바닥이 아래로 손끝이 왼쪽으로 향하게 하여 대고 오른손을 두 번 들었다 내린 다음, 손바닥이 아래로 향하게 반쯤 구부린 오른손을 가슴 앞에서 약간 내리다가 멈춘다.",
+          22: "가슴 앞에서 손등이 밖으로 손끝이 옆으로 향하게 편 두 손을 약간의 간격을 두고 겹치게 하여 상하로 어긋나게 두 번 움직인 다음, 손바닥이 아래로 향하게 반쯤 구부린 오른손을 가슴 앞에서 약간 내리다가 멈춘다.",
+          23: "손등이 밖으로 손끝이 옆으로 향한 두 손을 약간의 간격을 두고 겹치게 하여 상하로 엇갈리게 두 번 움직인다.",
+          24: "오른 손바닥으로 머리 오른쪽을 스쳐 내리며 손바닥을 반쯤 구부린 다음, 오른 주먹의 1지를 펴서, 주먹을 쥐고 수평으로 들어 올린 왼팔 밑에 손목에서 팔꿈치로 반원을 그린다.",
+          25: "오른손의 4지 옆면으로 왼 주먹의 손목 등에서 왼팔을 두 번 스쳐 올린다.",
+          26: "왼 손바닥으로 눈을 가리고, 오른 주먹의 1·5지를 펴서 1지 끝이 약간 아래로 향하게 모로 세워 전후로 약간 흔든다.",
+          27: "반쯤 구부린 두 손의 손가락을 서로 끼우며 상하로 돌린다.",
+          28: "두 손의 2·5지 끝을 맞대어 동그라미를 만들고 양손의 1지 끝이 약간 거리를 두고 마주 보게 한 다음 2지를 두 번 튕긴다.",
+          29: "위로 향하게 편 왼 손바닥에 오른 손등을 댔다가 뒤집어 손바닥을 댄다.",
+          30: "두 손을 펴서 손가락 끝마디에 깍지를 끼고 좌우로 비스듬히 세워 손목을 좌우로 약간씩 돌리며 위로 올린 다음, 두 주먹의 4·5지를 펴서 끝이 위로 향하게 맞대고 세워 양옆으로 벌린다.",
+          31: "두 손을 펴서 손가락 끝마디에 깍지를 끼고 좌우로 비스듬히 세워 손목을 좌우로 약간씩 돌리며 위로 올린다.",
+          32: "오른 주먹의 1지를 펴서 끝을 머리 오른쪽에 댄 다음, 오른 주먹의 1·2지를 펴서 왼손으로 잡고 오른손의 손목을 좌우로 두 번 돌린다.",
+          33: "오른 주먹의 1지를 펴서 끝을 머리 오른쪽에 댄 다음, 오른 주먹의 1·2지를 펴서 왼손으로 잡고 오른손의 손목을 오른쪽으로 돌린 다음, 두 주먹의 4·5지를 펴서 끝이 위로 향하게 맞대고 세워 양쪽으로 벌린다.",
+          34: "두 주먹의 1·5지를 펴서 1지 끝이 위로 향하게 하여 5지 끝을 머리 양쪽에 댄 다음, 두 주먹의 1지를 펴서 반쯤 구부려 양쪽으로 두 번 당긴다.",
+          35: "오른 주먹의 1·2지를 펴서 반쯤 구부려 돌리며 입 밖으로 올린 다음, 두 주먹의 4·5지를 펴서 끝이 위로 향하게 맞대고 세웠다가 좌우로 두 번 약간 돌리며 벌린다.",
+          36: "손등이 밖으로 향하게 세운 왼 손바닥에 오른 주먹의 1지를 펴서 끝을 대고 왼 손목을 돌려 손바닥이 밖으로 향하게 한다.",
+          37: "손바닥이 위로 향하게 편 두 손을 양옆으로 붙였다 벌리는 동작을 두 번 반복한 다음, 왼 손바닥에 오른 손가락을 약간 구부려 끝을 대고 동시에 밖으로 내민다.",
+          38: "오른 주먹의 1지를 펴서 얼굴을 왼쪽으로 한 바퀴 돌린 다음, 두 주먹의 1지를 펴서 끝이 아래쪽을 향하게 한 후에 양손을 중앙으로 두 번 내린다.",
+          39: "오른손의 1·5지 끝을 맞대어 동그라미를 만들어 왼 손바닥 위쪽에 위치하게 하여 두 손을 동시에 안으로 당기며 오른손의 손목을 안으로 돌리고, 1·5지를 펴서 바닥이 밖으로 향하게 쥔 두 주먹을 동시에 오른쪽으로 한 바퀴 돌린 다음, 두 주먹의 4·5지를 펴서 끝이 위로 향하게 맞대고 세워 양옆으로 두 번 약간 돌리며 벌린다.",
+          40: "오른 주먹의 5지 등을 오른쪽 입가에 댔다가 1지를 편 다음, 오른손의 1·5지 끝을 맞대어 동그라미를 만들어 왼 손바닥 위쪽에 위치하게 하여 두 손을 동시에 안으로 당기며 오른손의 손목을 안으로 돌린다.",
+          41: "5지와 나머지 손가락 사이를 벌려 ‘ㄷ’모양이 되게 하여 5지가 아래에 놓이게 한 오른손을, 같은 모양의 왼손의 5지 밑에 댔다가 왼 손등에 올려 놓은 다음, 오른손의 1·5지 끝을 맞대어 동그라미를 만들어 좌우로 가볍게 두 번 흔든다.",
+          42: "위로 향하게 편 왼 손등에 오른 손끝 바닥을 댄 다음, 오른손의 1·5지 끝을 맞대어 동그라미를 만들어 밖으로 내민다.",
+          43: "오른 주먹의 1·5지 끝으로 왼손의 2지 옆면을 스쳐 올린 다음, 두 주먹의 1지를 펴서 좌우로 비스듬히 마주 보게 세워 내리며 구부린다.",
+          44: "왼 주먹의 5지를 펴서 등이 위로 향하게 하고 그 위에 오른손으로 반원을 그린 다음, 손바닥이 아래로 향하게 반쯤 구부린 오른손을 가슴 앞에서 약간 내리다가 멈춘다.",
+          45: "손등이 위로 향하게 편 왼 손등에 오른손의 5지 등을 대고 1·2·3·4지를 흔든 다음, 손바닥이 아래로 향하게 반쯤 구부린 오른손을 가슴 앞에서 약간 내리다가 멈춘다.",
+          46: "오른 팔꿈치를 왼 손바닥에 올려놓고 오른 손가락을 바닥이 안으로 향하게 하여 오르쪽으로 움직이며 편 다음, 두 주먹의 1·2지를 펴서 반쯤 구부려 어깨 위에서 전후로 엇갈리게 움직인다.",
+          47: "1지를 편 오른 주먹의 손목을 왼손으로 받쳐 잡고 좌우로 흔든 다음, 두 손의 손끝을 맞대어 좌우로 비스듬히 세운다.",
+          48: "오른 주먹의 1·2·5지를 펴서 5지 등을 이마 중앙에 대고 1·2지를 상하로 흔든 다음, 손바닥이 아래로 향하게 반쯤 구부린 오른손을 가슴 앞에서 약간 내리다가 멈춘다.",
+          49: "오른 주먹의 1·2지를 펴서 끝 바닥을 입에 댔다가 왼 손바닥에 댄 다음, 두 손의 손끝을 맞대어 좌우로 비스듬히 세운다.",
+          50: "두 주먹의 5지를 펴서 세워 가슴 앞에서 약간 내린 다음, 두 손의 손끝을 맞대어 좌우로 비스듬히 세운다.",
+          51: "오른 주먹의 1·5지를 펴서 등이 밖으로 향하게 하여 왼쪽에서 오른쪽으로 이동시키고, 두 주먹을 5지를 펴서 세워 가슴 앞에서 약간 내린 다음, 두 손의 손끝을 맞대어 좌우로 비스듬히 세운다.",
+          52: "오른 주먹의 1지를 펴서 끝을, 손바닥이 오른쪽으로 향하게 모로 세운 왼 손바닥에 댔다가 떼면서 손을 펴고 1·5지 끝을 맞대어 동그라미를 만들어 손목을 안으로 돌리며 손가락을 편 다음, 두 손의 손끝을 맞대어 좌우로 비스듬히 세운다.",
+          53: "두 손의 1·5지 끝을 맞대어 마주 보게 하여 동시에 상하로 움직인다.",
+          54: "오른 손바닥으로 머리 오른쪽을 스쳐 내리다가 손바닥을 반쯤 구부려 끝을 머리 오른쪽에 댄 다음, 두 손을 1·5지 끝을 맞대어 마주 보게 하여 동시에 상하로 움직인다.",
+          55: "손끝이 밖으로 향하게 펴서 모로 세운 두 손을 맞댔다가 오른손만 위로 올린 다음, 두 손을 약간 구부려 양 어깨에 올려놓는다.",
+          56: "오른 주먹의 1·5지를 펴서 약간 구부려 왼쪽 어깨에서 오른쪽 허리로 내린 다음, 손바닥이 아래로 향하게 반쯤 구부린 오른손을 가슴 앞에서 약간 내리다가 멈춘다.",
+          57: "두 손을 펴서 손끝이 밖으로 향하게 하여 맞댔다가 손목을 양옆으로 돌려 편 다음, 손바닥이 아래로 향하게 반쯤 구부린 오른손을 가슴 앞에서 약간 내리다가 멈춘다.",
+          58: "두 손을 펴서 손끝이 밖으로 향하게 하여 맞댔다가 손목을 양옆으로 돌려 편 다음, 두 손의 1·5지 끝을 맞대어 동그라미를 만들어 전후로 엇갈리게 움직인다.",
+          59: "두 손의 1·5지 끝을 맞대어 동그라미를 만들어 전후로 엇갈리게 움직인 다음, 손바닥이 아래로 향하게 반쯤 구부린 오른손을 가슴 앞에서 약간 내리다가 멈춘다.",
+          60: "두 손의 1·5지 끝을 맞대어 동그라미를 만들어 가슴 앞에서 전후로 엇갈리게 두 번 움직인다.",
+          61: "1·2·5지 끝을 맞대고 모로 세운 두 손을 수평으로 엇갈리게 돌린 다음, 두 손을 펴서 마주 보게 모로 세워 위로 올린다.",
+          62: "오른 주먹을 오른쪽 귀 밑에서 1·2·5지를 튕기며 밖으로 내민다.",
+          63: "손바닥이 뒤로 향하여 세운 오른손의 4지 옆면을 머리 오른쪽에 댔다가 앞으로 내리며 손가락 끝을 모으는 동작을 두 번 한다.",
+          64: "오른손을 구부려 ‘C’모양을 만들어 1지 옆면이 닿게 오른쪽 볼에 댄다."
+        },
+        combinations: {},
+        urls: {},
+        videoMap: {
+          1: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191015/627735/MOV000249056_700X466.mp4"],
+          2: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20240118/1261123/MOV000361374_700X466.mp4"],
+          3: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200813/728911/MOV000248176_700X466.mp4"],
+          4: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191004/624386/MOV000241089_700X466.mp4"],
+          5: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733034/MOV000243750_700X466.mp4"],
+          6: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200820/732249/MOV000253352_700X466.mp4"],
+          7: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20201211/785438/MOV000357094_700X466.mp4"],
+          8: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20160927/347216/MOV000266612_700X466.mp4"],
+          9: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191021/629698/MOV000248490_700X466.mp4"],
+          10: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733331/MOV000256052_700X466.mp4"],
+          11: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20240118/1261171/MOV000361391_700X466.mp4"],
+          12: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20201210/784472/MOV000356902_700X466.mp4"],
+          13: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200812/728458/MOV000235013_700X466.mp4"],
+          14: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221019/1042292/MOV000360941_700X466.mp4"],
+          15: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/732913/MOV000252456_700X466.mp4"],
+          16: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200820/732653/MOV000249410_700X466.mp4"],
+          17: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20160924/345830/MOV000241083_700X466.mp4"],
+          18: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20190918/615454/MOV000237769_700X466.mp4"],
+          19: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200820/731842/MOV000240989_700X466.mp4"],
+          20: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20160325/271005/MOV000273034_700X466.mp4"],
+          21: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733041/MOV000244410_700X466.mp4"],
+          22: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20201211/785170/MOV000357016_700X466.mp4"],
+          23: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191016/628021/MOV000256159_700X466.mp4"],
+          24: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221024/1044054/MOV000361127_700X466.mp4"],
+          25: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/734834/MOV000251802_700X466.mp4"],
+          26: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/735043/MOV000257243_700X466.mp4"],
+          27: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733614/MOV000249472_700X466.mp4"],
+          28: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20201211/785423/MOV000357080_700X466.mp4"],
+          29: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200818/730511/MOV000246002_700X466.mp4"],
+          30: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20201210/784493/MOV000356917_700X466.mp4"],
+          31: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191007/624839/MOV000249130_700X466.mp4"],
+          32: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221018/1041785/MOV000360846_700X466.mp4"],
+          33: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200820/732282/MOV000251413_700X466.mp4"],
+          34: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200820/732645/MOV000258824_700X466.mp4"],
+          35: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191014/627245/MOV000249792_700X466.mp4"],
+          36: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191025/630790/MOV000254428_700X466.mp4"],
+          37: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191022/630140/MOV000247644_700X466.mp4"],
+          38: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200820/732304/MOV000251112_700X466.mp4"],
+          39: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20220801/1005066/MOV000359794_700X466.mp4"],
+          40: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191021/629558/MOV000255602_700X466.mp4"],
+          41: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20220811/1009698/MOV000360008_700X466.mp4"],
+          42: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733107/MOV000253001_700X466.mp4"],
+          43: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20220801/1005036/MOV000359765_700X466.mp4"],
+          44: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/734817/MOV000252271_700X466.mp4"],
+          45: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733353/MOV000254572_700X466.mp4"],
+          46: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200820/732397/MOV000257141_700X466.mp4"],
+          47: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221019/1042270/MOV000360930_700X466.mp4"],
+          48: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733219/MOV000249930_700X466.mp4"],
+          49: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221018/1041863/MOV000360913_700X466.mp4"],
+          50: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221014/1039862/MOV000360433_700X466.mp4"],
+          51: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20160325/252808/MOV000265463_700X466.mp4"],
+          52: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20221019/1042300/MOV000360949_700X466.mp4"],
+          53: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191016/628043/MOV000256197_700X466.mp4"],
+          54: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20220811/1009673/MOV000359983_700X466.mp4"],
+          55: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191016/628060/MOV000256840_700X466.mp4"],
+          56: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200824/735084/MOV000250485_700X466.mp4"],
+          57: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200821/733073/MOV000247440_700X466.mp4"],
+          58: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191011/626581/MOV000253390_700X466.mp4"],
+          59: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20201211/785136/MOV000356988_700X466.mp4"],
+          60: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20190918/615396/MOV000258781_700X466.mp4"],
+          61: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20191011/626604/MOV000252903_700X466.mp4"],
+          62: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20190918/615451/MOV000237701_700X466.mp4"],
+          63: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20200820/732450/MOV000255455_700X466.mp4"],
+          64: ["https://sldict.korean.go.kr/multimedia/multimedia_files/convert/20160325/271574/MOV000273265_700X466.mp4"]
+        }
+      },
+      
+      "cat5": {
+        title: "제 14과 (준비중)",
+        disabled: false,
+        hidden: true,
+        rawData: [],
+        imageMap: {},
+        descriptions: {},
+        combinations: {},
+        urls: {},
+        videoMap: {}
+      },
+
+      "cat6": {
+        title: "제 14과 (준비중)",
+        disabled: false,
+        hidden: true,
+        rawData: [],
+        imageMap: {},
+        descriptions: {},
+        combinations: {},
+        urls: {},
+        videoMap: {}
+      },
+
+       "cat7": {
+        title: "제 14과 (준비중)",
+        disabled: false,
+        hidden: true,
+        rawData: [],
+        imageMap: {},
+        descriptions: {},
+        combinations: {},
+        urls: {},
+        videoMap: {}
+      },
+
+      "cat8": {
+        title: "제 14과 (준비중)",
+        disabled: false,
+        hidden: true,
+        rawData: [],
+        imageMap: {},
+        descriptions: {},
+        combinations: {},
+        urls: {},
+        videoMap: {}
+      },      
+
+
+      
+    };
+
+    let currentCatKey = "cat1";
+    let wordList = [];
+    let fullActiveList = [];  
+    let activeList = [];      
+    let currentIndex = 0;
+    let savedFullIndex = 0;   
+    let isRevealed = false;
+    let isShuffled = true;
+    
+    let currentMode = 'FULL'; 
+    let studyType = 'TEST'; // 'TEST' (시험 모드) 또는 'VOCAB' (단어장 모드)
+    const statusMap = {};
+    
+    const selectedWords = new Set();
+    const hiddenWords = new Set();
+    let isGlobalHidden = false;
+    let isSelectingDrag = null;
+
+    function getWordKey(id) {
+      return `${currentCatKey}_${id}`;
+    }
+
+    // 웰컴 랜덤 메시지 초기화
+    function initWelcomeMessage() {
+      const msgElem = document.getElementById('welcomeMessage');
+      if (msgElem) {
+        const randomIndex = Math.floor(Math.random() * WELCOME_MESSAGES.length);
+        msgElem.innerText = WELCOME_MESSAGES[randomIndex];
+      }
+    }
+
+    function selectInitialStudyType(type) {
+      studyType = type;
+      const btnTest = document.getElementById('btnChoiceTest');
+      const btnVocab = document.getElementById('btnChoiceVocab');
+      if (type === 'TEST') {
+        btnTest.classList.add('active');
+        btnVocab.classList.remove('active');
+      } else {
+        btnTest.classList.remove('active');
+        btnVocab.classList.add('active');
+      }
+    }
+
+    function enterStudyRoom() {
+      const overlay = document.getElementById('welcomeOverlay');
+      if (overlay) {
+        overlay.style.display = 'none';
+      }
+      setStudyType(studyType);
+    }
+
+    // 모드 전환 (TEST <-> VOCAB)
+    function setStudyType(type) {
+      studyType = type;
+      const btnTest = document.getElementById('btnSwitchTest');
+      const btnVocab = document.getElementById('btnSwitchVocab');
+      const badge = document.getElementById('studyTypeBadge');
+      const btnRev = document.getElementById('btnReveal');
+      const timerRevealBox = document.getElementById('revealTimerBox');
+
+      if (studyType === 'TEST') {
+        btnTest.className = 'btn-type-toggle active';
+        btnVocab.className = 'btn-type-toggle';
+        badge.innerText = '📝 시험 모드';
+        badge.className = 'mode-badge';
+        btnRev.style.display = 'inline-block';
+        if (timerRevealBox) timerRevealBox.style.display = 'flex';
+      } else {
+        btnTest.className = 'btn-type-toggle';
+        btnVocab.className = 'btn-type-toggle active';
+        badge.innerText = '📖 단어장 모드 (정답 상시 공개)';
+        badge.className = 'mode-badge vocab';
+        btnRev.style.display = 'none';
+        if (timerRevealBox) timerRevealBox.style.display = 'none';
+      }
+
+      updateCard();
+    }
+
+    // 모바일 높이 조절 바
+    function initMobileResizer() {
+      const resizer = document.getElementById('dragResizer');
+      const sidebar = document.querySelector('.sidebar');
+      if (!resizer || !sidebar) return;
+
+      let startY = 0;
+      let startHeight = 0;
+      let isDragging = false;
+
+      function onStart(clientY) {
+        if (window.innerWidth > 768) return;
+        isDragging = true;
+        startY = clientY;
+        startHeight = sidebar.getBoundingClientRect().height;
+        resizer.classList.add('dragging');
+        document.body.style.userSelect = 'none';
+      }
+
+      function onMove(clientY) {
+        if (!isDragging) return;
+        const deltaY = clientY - startY;
+        let newHeight = startHeight + deltaY;
+        const minH = 140;
+        const maxH = window.innerHeight * 0.75;
+        newHeight = Math.max(minH, Math.min(newHeight, maxH));
+        sidebar.style.height = `${newHeight}px`;
+      }
+
+      function onEnd() {
+        if (!isDragging) return;
+        isDragging = false;
+        resizer.classList.remove('dragging');
+        document.body.style.userSelect = '';
+      }
+
+      resizer.addEventListener('mousedown', (e) => {
+        onStart(e.clientY);
+        const onMouseMove = (ev) => onMove(ev.clientY);
+        const onMouseUp = () => {
+          onEnd();
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+        };
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      });
+
+      resizer.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) onStart(e.touches[0].clientY);
+      }, { passive: true });
+
+      window.addEventListener('touchmove', (e) => {
+        if (isDragging && e.touches.length === 1) onMove(e.touches[0].clientY);
+      }, { passive: true });
+
+      window.addEventListener('touchend', onEnd);
+      window.addEventListener('touchcancel', onEnd);
+    }
+
+    // 카테고리 드롭다운 초기화
+    function initCategorySelector() {
+      const select = document.getElementById('catSelect');
+      select.innerHTML = '';
+      let firstAvailableKey = null;
+
+      for (const key in CATEGORIES) {
+        const cat = CATEGORIES[key];
+        if (cat.hidden) continue;
+
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = cat.title;
+
+        if (cat.disabled) {
+          opt.disabled = true;
+          opt.textContent += " (비활성화)";
+        } else if (!firstAvailableKey) {
+          firstAvailableKey = key;
+        }
+
+        select.appendChild(opt);
+      }
+
+      if (!CATEGORIES[currentCatKey] || CATEGORIES[currentCatKey].hidden || CATEGORIES[currentCatKey].disabled) {
+        currentCatKey = firstAvailableKey || Object.keys(CATEGORIES)[0];
+      }
+      select.value = currentCatKey;
+    }
+
+    function changeCategory(catKey) {
+      clearAllTimers();
+      currentCatKey = catKey;
+      loadCategoryData();
+    }
+
+    function loadCategoryData() {
+      const cat = CATEGORIES[currentCatKey] || { rawData: [] };
+      wordList = (cat.rawData || []).map(item => {
+        const match = item.match(/^(\d+)\s*(.*)/);
+        return match ? { id: parseInt(match[1]), text: match[2] } : { id: 0, text: item };
+      });
+      
+      fullActiveList = [...wordList];
+      if (isShuffled) shuffleArray(fullActiveList);
+      activeList = [...fullActiveList];
+      currentIndex = 0;
+      savedFullIndex = 0;
+      currentMode = 'FULL';
+      selectedWords.clear();
+      hiddenWords.clear();
+      isGlobalHidden = false;
+      const ghc = document.getElementById('globalHideCheck');
+      if (ghc) ghc.checked = false;
+      
+      updateOrderButtonUI();
+      renderSidebar();
+      updateCard();
+    }
+
+    function init() {
+      initWelcomeMessage();
+      initCategorySelector();
+      loadCategoryData();
+      initMobileResizer();
+    }
+
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+
+    function shuffleCurrentList() {
+      if (activeList.length === 0) return;
+      clearAllTimers();
+      shuffleArray(activeList);
+      currentIndex = 0;
+      isShuffled = true;
+      updateOrderButtonUI();
+      updateCard();
+      renderSidebar();
+    }
+
+    function sortCurrentListNumeric() {
+      if (activeList.length === 0) return;
+      clearAllTimers();
+      activeList.sort((a, b) => a.id - b.id);
+      currentIndex = 0;
+      isShuffled = false;
+      updateOrderButtonUI();
+      updateCard();
+      renderSidebar();
+    }
+
+    function updateOrderButtonUI() {
+      const btnShuf = document.getElementById('btnShuffle');
+      const btnNum = document.getElementById('btnNumeric');
+      if (btnShuf && btnNum) {
+        if (isShuffled) {
+          btnShuf.className = 'btn-order-toggle active';
+          btnNum.className = 'btn-order-toggle';
+        } else {
+          btnShuf.className = 'btn-order-toggle';
+          btnNum.className = 'btn-order-toggle active';
+        }
+      }
+    }
+
+    // 타이머 제어
+    let revealTimerId = null;
+    let nextTimerId = null;
+    let revealTimeLeft = 0;
+    let nextTimeLeft = 0;
+
+    function clearAllTimers() {
+      if (revealTimerId) clearInterval(revealTimerId);
+      if (nextTimerId) clearInterval(nextTimerId);
+      revealTimerId = null;
+      nextTimerId = null;
+      const rCd = document.getElementById('revealCountdown');
+      const nCd = document.getElementById('nextCountdown');
+      if (rCd) rCd.innerText = '-';
+      if (nCd) nCd.innerText = '-';
+    }
+
+    function initTimers() {
+      clearAllTimers();
+      if (activeList.length === 0) return;
+      const useReveal = document.getElementById('useRevealTimer').checked;
+      const useNext = document.getElementById('useNextTimer').checked;
+      const rCd = document.getElementById('revealCountdown');
+      const nCd = document.getElementById('nextCountdown');
+
+      if (studyType === 'VOCAB') {
+        if (useNext) startNextCountdown();
+        return;
+      }
+
+      if (!isRevealed) {
+        if (useReveal) {
+          revealTimeLeft = parseInt(document.getElementById('revealSecs').value) || 3;
+          rCd.innerText = `${revealTimeLeft}초`;
+          revealTimerId = setInterval(() => {
+            revealTimeLeft--;
+            if (revealTimeLeft > 0) {
+              rCd.innerText = `${revealTimeLeft}초`;
+            } else {
+              clearInterval(revealTimerId);
+              revealTimerId = null;
+              rCd.innerText = '열림';
+              toggleAnswer(true);
+            }
+          }, 1000);
+        }
+
+        if (!useReveal && useNext) {
+          startNextCountdown();
+        }
+      } else {
+        if (rCd) rCd.innerText = '열림';
+        if (useNext) {
+          startNextCountdown();
+        }
+      }
+    }
+
+    function startNextCountdown() {
+      if (nextTimerId) clearInterval(nextTimerId);
+      const nCd = document.getElementById('nextCountdown');
+      nextTimeLeft = parseInt(document.getElementById('nextSecs').value) || 2;
+      nCd.innerText = `${nextTimeLeft}초`;
+
+      nextTimerId = setInterval(() => {
+        nextTimeLeft--;
+        if (nextTimeLeft > 0) {
+          nCd.innerText = `${nextTimeLeft}초`;
+        } else {
+          clearInterval(nextTimerId);
+          nextTimerId = null;
+          nCd.innerText = '-';
+          if (currentIndex < activeList.length - 1) {
+            nextWord();
+          } else {
+            alert("🎉 마지막 단어입니다! 해당 과의 학습이 완료되었습니다.");
+          }
+        }
+      }, 1000);
+    }
+
+    function updateSidebarBadge(id) {
+      const itemElem = document.getElementById(`side-item-${id}`);
+      if (itemElem) {
+        const badge = itemElem.querySelector('.sidebar-badge');
+        if (badge) {
+          const st = statusMap[getWordKey(id)] || 'none';
+          const badgeLabel = st === 'known' ? '완료' : st === 'unknown' ? '모름' : st === 'review' ? '재확인' : '미체크';
+          badge.className = `sidebar-badge badge-${st}`;
+          badge.innerText = badgeLabel;
+        }
+      }
+    }
+
+    function cycleStatus(id, event) {
+      if (event) event.stopPropagation();
+      const key = getWordKey(id);
+      const currentStatus = statusMap[key] || 'none';
+      let nextStatus = 'known';
+      if (currentStatus === 'known') nextStatus = 'unknown';
+      else if (currentStatus === 'unknown') nextStatus = 'review';
+      else if (currentStatus === 'review') nextStatus = 'none';
+
+      if (nextStatus === 'none') delete statusMap[key];
+      else statusMap[key] = nextStatus;
+
+      updateSidebarBadge(id);
+      updateStats();
+
+      if (activeList[currentIndex]?.id === id) {
+        const tagElem = document.getElementById('statusTag');
+        tagElem.className = `status-tag tag-${nextStatus}`;
+        tagElem.innerText = nextStatus === 'known' ? '아는 문제' : nextStatus === 'unknown' ? '모르는 문제' : nextStatus === 'review' ? '재확인' : '';
+      }
+    }
+
+    function toggleGlobalHide(state) {
+      isGlobalHidden = state;
+      if (isGlobalHidden) {
+        wordList.forEach(w => hiddenWords.add(w.id));
+      } else {
+        hiddenWords.clear();
+      }
+      renderSidebar();
+    }
+
+    function toggleHideWord(id, event) {
+      if (event) event.stopPropagation();
+      if (hiddenWords.has(id)) hiddenWords.delete(id);
+      else hiddenWords.add(id);
+      renderSidebar();
+    }
+
+    function selectAllFiltered() {
+      const query = (document.getElementById('searchInput')?.value || '').toLowerCase();
+      wordList.forEach(w => {
+        if (!query || w.text.toLowerCase().includes(query)) selectedWords.add(w.id);
+      });
+      renderSidebar();
+    }
+
+    function deselectAllFiltered() {
+      const query = (document.getElementById('searchInput')?.value || '').toLowerCase();
+      wordList.forEach(w => {
+        if (!query || w.text.toLowerCase().includes(query)) selectedWords.delete(w.id);
+      });
+      renderSidebar();
+    }
+
+    function handleMouseDown(e, id) {
+      if (e.target.tagName === 'BUTTON' || e.target.classList.contains('sidebar-badge')) return;
+      const cb = document.getElementById(`cb-${id}`);
+      isSelectingDrag = !cb.checked;
+      cb.checked = isSelectingDrag;
+      updateSet(id, isSelectingDrag);
+    }
+
+    function handleMouseEnter(e, id) {
+      if (e.buttons === 1 && isSelectingDrag !== null) { 
+        const cb = document.getElementById(`cb-${id}`);
+        cb.checked = isSelectingDrag;
+        updateSet(id, isSelectingDrag);
+      }
+    }
+
+    function updateSet(id, state) {
+      if(state) selectedWords.add(id);
+      else selectedWords.delete(id);
+    }
+
+    window.addEventListener('mouseup', () => { isSelectingDrag = null; });
+
+    function jumpToWord(id) {
+      clearAllTimers();
+      const idx = activeList.findIndex(w => w.id === id);
+      if (idx !== -1) {
+        currentIndex = idx;
+        updateCard();
+      } else {
+        if(confirm("현재 학습 목록에 없는 단어입니다. 전체 모드로 전환하여 해당 단어로 이동할까요?")) {
+           returnToFullMode();
+           const fullIdx = activeList.findIndex(w => w.id === id);
+           if(fullIdx !== -1) {
+             currentIndex = fullIdx;
+             updateCard();
+           }
+        }
+      }
+    }
+
+    function studySelected() {
+      if (selectedWords.size === 0) {
+        alert("선택된 단어가 없습니다. 단어를 체크해주세요.");
+        return;
+      }
+      clearAllTimers();
+      if (currentMode === 'FULL') savedFullIndex = currentIndex; 
+      
+      currentMode = 'CUSTOM';
+      activeList = wordList.filter(w => selectedWords.has(w.id));
+      if (isShuffled) shuffleArray(activeList);
+      currentIndex = 0;
+      updateCard();
+    }
+
+    function markCurrent(type) {
+      if (activeList.length === 0) return;
+      const current = activeList[currentIndex];
+      statusMap[getWordKey(current.id)] = type;
+
+      const tagElem = document.getElementById('statusTag');
+      tagElem.className = `status-tag tag-${type}`;
+      tagElem.innerText = type === 'known' ? '아는 문제' : type === 'unknown' ? '모르는 문제' : type === 'review' ? '재확인' : '';
+
+      updateSidebarBadge(current.id);
+      updateStats();
+      nextWord();
+    }
+
+    function nextWord() {
+      clearAllTimers();
+      if (currentIndex < activeList.length - 1) {
+        currentIndex++;
+        updateCard();
+      }
+    }
+
+    function prevWord() {
+      clearAllTimers();
+      if (currentIndex > 0) {
+        currentIndex--;
+        updateCard();
+      }
+    }
+
+    function updateStats() {
+      let known = 0, unknown = 0, review = 0, unchecked = 0;
+      wordList.forEach(w => {
+        const st = statusMap[getWordKey(w.id)];
+        if (st === 'known') known++;
+        else if (st === 'unknown') unknown++;
+        else if (st === 'review') review++;
+        else unchecked++;
+      });
+
+      document.getElementById('cntKnown').innerText = known;
+      document.getElementById('cntUnknown').innerText = unknown;
+      document.getElementById('cntReview').innerText = review;
+      document.getElementById('sideUncheckedCnt').innerText = unchecked;
+
+      document.getElementById('mTotal').innerText = wordList.length;
+      document.getElementById('mChecked').innerText = wordList.length - unchecked;
+      document.getElementById('mKnown').innerText = known;
+      document.getElementById('mUnknown').innerText = unknown;
+      document.getElementById('mReview').innerText = review;
+      document.getElementById('mUnchecked').innerText = unchecked;
+
+      const uncheckedList = wordList.filter(w => !statusMap[getWordKey(w.id)]).map(w => w.id + '번(' + w.text.split(',')[0] + ')');
+      document.getElementById('mUncheckedList').innerText = uncheckedList.length ? uncheckedList.join(', ') : '없음 (전부 체크 완료)';
+    }
+
+    function startLearning() {
+      if (wordList.length === 0) {
+        alert("현재 카테고리에 등록된 단어가 없습니다.");
+        return;
+      }
+      if (confirm("새로운 셔플로 전체 학습을 시작하시겠습니까? (기존 채점 상태는 유지됩니다)")) {
+        clearAllTimers();
+        fullActiveList = [...wordList];
+        shuffleArray(fullActiveList);
+        activeList = [...fullActiveList];
+        currentIndex = 0;
+        savedFullIndex = 0;
+        currentMode = 'FULL';
+        isShuffled = true;
+        updateOrderButtonUI();
+        updateCard();
+        renderSidebar();
+      }
+    }
+
+    function startReviewMode() {
+      const targets = wordList.filter(w => {
+        const st = statusMap[getWordKey(w.id)];
+        return st === 'unknown' || st === 'review';
+      });
+      if (targets.length === 0) {
+        alert("모르는 문제나 재확인할 문제가 없습니다.");
+        return;
+      }
+      clearAllTimers();
+      if (currentMode === 'FULL') savedFullIndex = currentIndex; 
+      
+      currentMode = 'REVIEW';
+      activeList = [...targets];
+      if (isShuffled) shuffleArray(activeList);
+      currentIndex = 0;
+      updateCard();
+    }
+
+    function returnToFullMode() {
+      clearAllTimers();
+      currentMode = 'FULL';
+      activeList = [...fullActiveList];
+      currentIndex = Math.min(savedFullIndex, activeList.length - 1);
+      updateCard();
+    }
+
+    function getWordDetailHtml(current) {
+      const cat = CATEGORIES[currentCatKey] || {};
+      const descText = cat.descriptions ? cat.descriptions[current.id] : null;
+      const combText = cat.combinations ? cat.combinations[current.id] : null;
+      const imgs = cat.imageMap ? cat.imageMap[current.id] : null;
+      const vids = cat.videoMap ? cat.videoMap[current.id] : null;
+      const linkUrl = cat.urls ? cat.urls[current.id] : null;
+
+      let imgHtml = '';
+      if (imgs && imgs.length > 0) {
+        const imgBoxes = imgs.map(src => `<div class="img-box"><img src="${src}" alt="수어 사진"></div>`).join('');
+        imgHtml = `<div class="img-container">${imgBoxes}</div>`;
+      }
+
+      let vidHtml = '';
+      if (vids && vids.length > 0) {
+        const vidBoxes = vids.map(src => `
+          <div class="img-box" style="background:#000;">
+            <video src="${src}" autoplay loop muted playsinline controls></video>
+          </div>
+        `).join('');
+        vidHtml = `<div class="img-container">${vidBoxes}</div>`;
+      }
+
+      let infoHtml = '';
+      if (descText) {
+        infoHtml += `<div class="desc-text">📖 <b>동작 설명:</b> ${descText}</div>`;
+      }
+      
+      if (combText) {
+        infoHtml += `<div class="desc-text" style="background: #eef2ff; border-color: #c7d2fe; color: #3730a3; margin-top: 5px;">🔗 <b>단어 결합:</b> ${combText}</div>`;
+      }
+
+      let linkHtml = '';
+      if (linkUrl) {
+        linkHtml = `
+          <div class="dict-link-wrap">
+            <a href="${linkUrl}" target="_blank" rel="noopener noreferrer" class="dict-link-btn">
+              🌐 국립국어원 사전 상세페이지 보기 ↗
+            </a>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="answer-container">
+          ${infoHtml}
+          ${vidHtml}
+          ${imgHtml}
+          ${linkHtml}
+        </div>
+      `;
+    }
+
+    function updateCard() {
+      const cat = CATEGORIES[currentCatKey] || { title: "과목 선택" };
+      const modeBadge = document.getElementById('modeName');
+      const btnFullMode = document.getElementById('btnFullMode');
+      const btnReviewMode = document.getElementById('btnReviewMode');
+      const wordBox = document.getElementById('display');
+
+      if (activeList.length === 0) {
+        wordBox.innerHTML = `
+          <div id="statusTag"></div>
+          <div id="wordContent" style="color: #64748b; font-size: 1.1rem; line-height: 1.6;">
+            📂 <b>${cat.title}</b><br>
+            등록된 단어가 없습니다.<br>
+            코드 내 <code>CATEGORIES</code> 객체에 단어를 추가해주세요.
+          </div>
+        `;
+        document.getElementById('progress').innerText = "단어 0 / 0";
+        modeBadge.innerText = `${cat.title} | 비어있음`;
+        btnFullMode.style.display = 'none';
+        btnReviewMode.style.display = 'none';
+        updateStats();
+        return;
+      }
+
+      const current = activeList[currentIndex];
+      const status = statusMap[getWordKey(current.id)] || 'none';
+
+      if (currentMode === 'REVIEW') {
+        modeBadge.innerText = `${cat.title} | 오답노트 복습 모드`;
+        modeBadge.className = "mode-badge review";
+        btnFullMode.style.display = 'block';
+        btnReviewMode.style.display = 'none';
+      } else if (currentMode === 'CUSTOM') {
+        modeBadge.innerText = `${cat.title} | ✨ 맞춤 선택 학습`;
+        modeBadge.className = "mode-badge custom";
+        btnFullMode.style.display = 'block';
+        btnReviewMode.style.display = 'block';
+      } else {
+        modeBadge.innerText = `${cat.title} | 전체 학습 모드`;
+        modeBadge.className = "mode-badge";
+        btnFullMode.style.display = 'none';
+        btnReviewMode.style.display = 'block';
+      }
+
+      document.getElementById('progress').innerText = `단어 ${currentIndex + 1} / ${activeList.length}`;
+
+      const statusTagHtml = `
+        <div id="statusTag" class="status-tag tag-${status}">
+          ${status === 'known' ? '아는 문제' : status === 'unknown' ? '모르는 문제' : status === 'review' ? '재확인' : ''}
+        </div>
+      `;
+
+      if (studyType === 'VOCAB') {
+        // 단어장 모드: 처음부터 정답 오픈
+        isRevealed = true;
+        wordBox.innerHTML = `
+          ${statusTagHtml}
+          <div id="wordContent">
+            <div style="font-size:1.4rem;">${current.id}. ${current.text}</div>
+            ${getWordDetailHtml(current)}
+          </div>
+        `;
+      } else {
+        // 시험 모드: 단어명만 노출
+        isRevealed = false;
+        wordBox.innerHTML = `
+          ${statusTagHtml}
+          <div id="wordContent">
+            <div style="font-size:1.4rem;">${current.id}. ${current.text}</div>
+          </div>
+        `;
+      }
+
+      initTimers();
+      updateStats();
+      updateSidebarActive();
+    }
+
+    // 정답 토글 (시험 모드 전용)
+    function toggleAnswer(isAuto = false) {
+      if (activeList.length === 0 || studyType === 'VOCAB') return;
+      const current = activeList[currentIndex];
+      const wordContent = document.getElementById('wordContent');
+      isRevealed = isAuto ? true : !isRevealed;
+
+      if (isRevealed) {
+        if (revealTimerId) clearInterval(revealTimerId);
+        const rCd = document.getElementById('revealCountdown');
+        if (rCd) rCd.innerText = '열림';
+
+        wordContent.innerHTML = `
+          <div style="font-size:1.4rem;">${current.id}. ${current.text}</div>
+          ${getWordDetailHtml(current)}
+        `;
+
+        const useNext = document.getElementById('useNextTimer').checked;
+        if (useNext) {
+          startNextCountdown();
+        }
+      } else {
+        wordContent.innerHTML = `<div style="font-size:1.4rem;">${current.id}. ${current.text}</div>`;
+        initTimers();
+      }
+    }
+
+    function renderSidebar() {
+      const sidebarList = document.getElementById('sidebarList');
+      sidebarList.innerHTML = '';
+      const query = (document.getElementById('searchInput')?.value || '').toLowerCase();
+      const orderType = document.getElementById('sidebarOrder')?.value || 'study';
+
+      let displayList = (orderType === 'study') ? [...activeList] : [...wordList];
+
+      displayList.forEach((item) => {
+        if (query && !item.text.toLowerCase().includes(query)) return;
+        
+        const div = document.createElement('div');
+        const isActive = activeList.length > 0 && activeList[currentIndex]?.id === item.id;
+        div.className = `sidebar-item ${isActive ? 'active' : ''}`;
+        div.id = `side-item-${item.id}`;
+
+        const st = statusMap[getWordKey(item.id)] || 'none';
+        const badgeLabel = st === 'known' ? '완료' : st === 'unknown' ? '모름' : st === 'review' ? '재확인' : '미체크';
+
+        const isHidden = hiddenWords.has(item.id);
+        const isChecked = selectedWords.has(item.id) ? 'checked' : '';
+
+        div.innerHTML = `
+          <div class="checkbox-wrap" onmousedown="handleMouseDown(event, ${item.id})" onmouseenter="handleMouseEnter(event, ${item.id})">
+            <input type="checkbox" id="cb-${item.id}" ${isChecked} style="pointer-events: none;">
+          </div>
+          <div class="word-text ${isHidden ? 'blurred' : ''}" onclick="jumpToWord(${item.id})">
+            ${item.id}. ${item.text.split(',')[0]}
+          </div>
+          <button class="eye-btn" onclick="toggleHideWord(${item.id}, event)">
+            ${isHidden ? '🙈' : '👁️'}
+          </button>
+          <span class="sidebar-badge badge-${st}" title="클릭하여 상태 변경" onclick="cycleStatus(${item.id}, event)">${badgeLabel}</span>
+        `;
+        sidebarList.appendChild(div);
+      });
+    }
+
+    function updateSidebarActive() {
+      const activeItem = activeList[currentIndex];
+      if (!activeItem) return;
+      
+      document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+      const activeElem = document.getElementById(`side-item-${activeItem.id}`);
+      
+      if (activeElem) {
+        activeElem.classList.add('active');
+
+        if (window.innerWidth > 768) {
+          const listContainer = document.getElementById('sidebarList');
+          if (listContainer) {
+            const itemOffsetTop = activeElem.offsetTop - listContainer.offsetTop;
+            if (itemOffsetTop < listContainer.scrollTop) {
+              listContainer.scrollTop = itemOffsetTop;
+            } else if (itemOffsetTop + activeElem.clientHeight > listContainer.scrollTop + listContainer.clientHeight) {
+              listContainer.scrollTop = itemOffsetTop + activeElem.clientHeight - listContainer.clientHeight;
+            }
+          }
+        }
+      }
+    }
+
+    function resetAll() {
+      const catTitle = CATEGORIES[currentCatKey]?.title || "현재 과";
+      if (confirm(`[${catTitle}]의 모든 채점 상태를 초기화하고 셔플하시겠습니까?`)) {
+        clearAllTimers();
+        wordList.forEach(w => {
+          delete statusMap[getWordKey(w.id)];
+        });
+        loadCategoryData();
+      }
+    }
+
+    function togglePauseModal() {
+      const modal = document.getElementById('pauseModal');
+      modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    function changeImgSize(val) {
+      document.documentElement.style.setProperty('--img-scale', val);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+      const key = e.key.toLowerCase();
+      
+      if (key === '1' || key === 'a') markCurrent('known');
+      else if (key === '2' || key === 's') markCurrent('unknown');
+      else if (key === '3' || key === 'd') markCurrent('review');
+      else if (key === ' ' || key === 'w') { 
+        if (studyType === 'TEST') {
+          e.preventDefault(); 
+          toggleAnswer(); 
+        }
+      }
+      else if (key === 'q') prevWord();
+      else if (key === 'e') nextWord();
+      else if (key === 'p') togglePauseModal();
+      else if (key === 'r') resetAll();
+      else if (key === 'n') startLearning(); 
+      else if (key === 'o') {                
+        if (currentMode === 'FULL') startReviewMode();
+        else returnToFullMode();
+      }
+      else if (key === 'escape') {
+        const pModal = document.getElementById('pauseModal');
+        if (pModal) pModal.style.display = 'none';
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>
