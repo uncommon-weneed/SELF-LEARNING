@@ -400,6 +400,8 @@
       .top-controls { flex-direction: column; align-items: stretch; }
       .control-box { justify-content: space-between; }
     }
+
+    
   </style>
 </head>
 <body>
@@ -544,30 +546,6 @@
           <label for="imgScale">🔍 크기:</label>
           <input type="range" id="imgScale" min="0.5" max="3.0" step="0.1" value="1.0" oninput="changeImgSize(this.value)">
         </div>
-
-        <!-- TTS 음성 설정, 재생속도(0.25배~2배), 자동재생 제어박스 -->
-        <div class="control-box" style="background:#fefce8; border-color:#fde047; gap:8px;">
-          <span>🗣️ 음성:</span>
-          <select id="ttsVoiceSelect" style="border: 1px solid #facc15; border-radius: 4px; outline: none; padding: 2px 4px; font-size: 0.8rem; background: #fff;">
-            <option value="">음성 로딩중...</option>
-          </select>
-          
-          <select id="ttsRateSelect" style="border: 1px solid #facc15; border-radius: 4px; outline: none; padding: 2px 4px; font-size: 0.8rem; background: #fff;" title="음성 재생 속도 선택">
-            <option value="0.25">0.25배속</option>
-            <option value="0.5">0.5배속</option>
-            <option value="0.75">0.75배속</option>
-            <option value="1.0" selected>1.0배속</option>
-            <option value="1.25">1.25배속</option>
-            <option value="1.5">1.5배속</option>
-            <option value="1.75">1.75배속</option>
-            <option value="2.0">2.0배속</option>
-          </select>
-
-          <label style="cursor:pointer; display:inline-flex; align-items:center; gap:3px;" title="단어가 넘어갈 때 자동으로 음성을 재생하고, 음성이 끝난 뒤 다음 진행">
-            <input type="checkbox" id="autoPlayTts" > 🔄 자동재생
-          </label>
-          <button onclick="speakCurrentWord()" style="background:#eab308; color:#fff; border:none; border-radius:4px; padding:3px 8px; font-size:0.75rem; cursor:pointer;" title="현재 단어 음성 듣기">🔊 듣기</button>
-        </div>
       </div>
 
       <div class="word-box" id="display">
@@ -642,6 +620,9 @@
   </div>
 
   <script>
+    /* ==========================================================================
+       10가지 수어교실 중급반 랜덤 응원 문구
+       ========================================================================== */
     const WELCOME_MESSAGES = [
       "손끝으로 세상과 따뜻하게 마음을 잇는 시간입니다. 중급반 여러분을 환영합니다! 🤟",
       "표정과 손짓이 풍성해질수록 여러분의 수어도 더욱 깊어집니다. 오늘도 화이팅! ✨",
@@ -654,8 +635,8 @@
       "오늘 익힌 수어 단어 하나가 내일의 소중한 대화를 이어줍니다. 즐겁게 학습하세요!",
       "손끝의 작은 움직임이 누군가에게는 큰 울림이 됩니다. 중급반 여러분, 힘내세요! 🌈"
     ];
-
-    const CATEGORY_ORDER = ["cat1", "cat2", "cat3", "cat4", "cat5", "cat6", "cat7", "cat8", "cat9", "cat10" ];
+// 표시하고 싶은 순서대로 키 이름을 나열합니다.
+const CATEGORY_ORDER = ["cat1", "cat2", "cat3", "cat4", "cat5", "cat6", "cat7", "cat8", "cat9", "cat10", "cat11", "cat12", "cat13", "cat14", "cat15", "cat16", "cat17", "cat18", "cat19", "cat20"];
     const CATEGORIES = {
       "cat1": {
         title: "제12과 나라",
@@ -6024,9 +6005,10 @@ videoMap: {
         videoMap: {}
       },      
 
+      
     };
 
-    let currentCatKey = CATEGORY_ORDER[0];
+    let currentCatKey = "CATEGORY_ORDER";
     let wordList = [];
     let fullActiveList = [];  
     let activeList = [];      
@@ -6036,7 +6018,7 @@ videoMap: {
     let isShuffled = true;
     
     let currentMode = 'FULL'; 
-    let studyType = 'TEST'; 
+    let studyType = 'TEST'; // 'TEST' (시험 모드) 또는 'VOCAB' (단어장 모드)
     const statusMap = {};
     
     const selectedWords = new Set();
@@ -6044,97 +6026,11 @@ videoMap: {
     let isGlobalHidden = false;
     let isSelectingDrag = null;
 
-    let ttsVoices = [];
-    let isSpeaking = false; 
-
     function getWordKey(id) {
       return `${currentCatKey}_${id}`;
     }
 
-    function loadVoices() {
-      if (!('speechSynthesis' in window)) return;
-      ttsVoices = window.speechSynthesis.getVoices();
-      const voiceSelect = document.getElementById('ttsVoiceSelect');
-      if (!voiceSelect) return;
-
-      const koreanVoices = ttsVoices.filter(v => v.lang.includes('ko') || v.lang.includes('KR'));
-      voiceSelect.innerHTML = '';
-
-      if (koreanVoices.length === 0) {
-        const opt = document.createElement('option');
-        opt.value = '';
-        opt.textContent = '기본 한국어 음성';
-        voiceSelect.appendChild(opt);
-        return;
-      }
-
-      koreanVoices.forEach((voice, index) => {
-        const opt = document.createElement('option');
-        opt.value = index;
-        
-        let genderTag = '🗣️ 일반';
-        const nameLower = voice.name.toLowerCase();
-        if (nameLower.includes('female') || nameLower.includes('heami') || nameLower.includes('sunhi') || nameLower.includes('yuna') || nameLower.includes('seoyeon') || nameLower.includes('여성')) {
-          genderTag = '👩 여성';
-        } else if (nameLower.includes('male') || nameLower.includes('jihoon') || nameLower.includes('minsu') || nameLower.includes('남성')) {
-          genderTag = '👨 남성';
-        }
-
-        opt.textContent = `${genderTag} (${voice.name})`;
-        if (index === 0) opt.selected = true;
-        voiceSelect.appendChild(opt);
-      });
-    }
-
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.onvoiceschanged = loadVoices;
-    }
-
-    // 단어 음성 출력 (속도 조절 값 반영)
-    function speakCurrentWord(onEndCallback) {
-      if (!('speechSynthesis' in window)) {
-        if (onEndCallback) onEndCallback();
-        return;
-      }
-      if (activeList.length === 0) {
-        if (onEndCallback) onEndCallback();
-        return;
-      }
-
-      const current = activeList[currentIndex];
-      const cleanText = current.text.replace(/^\d+\s*/, '');
-      const firstWord = cleanText.split(',')[0].trim();
-
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(firstWord);
-      utterance.lang = 'ko-KR';
-
-      // 속도 설정 셀렉트 값 반영 (0.25배 ~ 2.0배)
-      const rateSelect = document.getElementById('ttsRateSelect');
-      utterance.rate = rateSelect ? parseFloat(rateSelect.value) : 1.0;
-
-      const voiceSelect = document.getElementById('ttsVoiceSelect');
-      if (voiceSelect && voiceSelect.value !== '') {
-        const koreanVoices = ttsVoices.filter(v => v.lang.includes('ko') || v.lang.includes('KR'));
-        const selectedVoice = koreanVoices[voiceSelect.value];
-        if (selectedVoice) {
-          utterance.voice = selectedVoice;
-        }
-      }
-
-      isSpeaking = true;
-      utterance.onend = () => {
-        isSpeaking = false;
-        if (onEndCallback) onEndCallback();
-      };
-      utterance.onerror = () => {
-        isSpeaking = false;
-        if (onEndCallback) onEndCallback();
-      };
-
-      window.speechSynthesis.speak(utterance);
-    }
-
+    // 웰컴 랜덤 메시지 초기화
     function initWelcomeMessage() {
       const msgElem = document.getElementById('welcomeMessage');
       if (msgElem) {
@@ -6161,10 +6057,10 @@ videoMap: {
       if (overlay) {
         overlay.style.display = 'none';
       }
-      loadVoices();
       setStudyType(studyType);
     }
 
+    // 모드 전환 (TEST <-> VOCAB)
     function setStudyType(type) {
       studyType = type;
       const btnTest = document.getElementById('btnSwitchTest');
@@ -6192,6 +6088,7 @@ videoMap: {
       updateCard();
     }
 
+    // 모바일 높이 조절 바
     function initMobileResizer() {
       const resizer = document.getElementById('dragResizer');
       const sidebar = document.querySelector('.sidebar');
@@ -6251,11 +6148,13 @@ videoMap: {
       window.addEventListener('touchcancel', onEnd);
     }
 
+    // 카테고리 드롭다운 초기화
     function initCategorySelector() {
-      const select = document.getElementById('catSelect');
+      const select = document.getElementById('catSelect'); // 원래 쓰시던 ID 유지
       select.innerHTML = '';
       let firstAvailableKey = null;
 
+      // CATEGORY_ORDER 가 있으면 지정된 순서대로, 없으면 기존 순서대로 목록 추출
       const orderList = (typeof CATEGORY_ORDER !== 'undefined') ? CATEGORY_ORDER : Object.keys(CATEGORIES);
 
       orderList.forEach(key => {
@@ -6276,6 +6175,7 @@ videoMap: {
         select.appendChild(opt);
       });
 
+      // 현재 선택된 카테고리가 비활성화이거나 없을 때 첫 번째 사용 가능한 카테고리로 자동 선택
       if (!CATEGORIES[currentCatKey] || CATEGORIES[currentCatKey].hidden || CATEGORIES[currentCatKey].disabled) {
         currentCatKey = firstAvailableKey || orderList[0];
       }
@@ -6317,7 +6217,6 @@ videoMap: {
       initCategorySelector();
       loadCategoryData();
       initMobileResizer();
-      loadVoices();
     }
 
     function shuffleArray(arr) {
@@ -6363,6 +6262,7 @@ videoMap: {
       }
     }
 
+    // 타이머 제어
     let revealTimerId = null;
     let nextTimerId = null;
     let revealTimeLeft = 0;
@@ -6381,7 +6281,7 @@ videoMap: {
 
     function initTimers() {
       clearAllTimers();
-      if (activeList.length === 0 || isSpeaking) return;
+      if (activeList.length === 0) return;
       const useReveal = document.getElementById('useRevealTimer').checked;
       const useNext = document.getElementById('useNextTimer').checked;
       const rCd = document.getElementById('revealCountdown');
@@ -6427,8 +6327,6 @@ videoMap: {
       nCd.innerText = `${nextTimeLeft}초`;
 
       nextTimerId = setInterval(() => {
-        if (isSpeaking) return;
-
         nextTimeLeft--;
         if (nextTimeLeft > 0) {
           nCd.innerText = `${nextTimeLeft}초`;
@@ -6537,7 +6435,6 @@ videoMap: {
     window.addEventListener('mouseup', () => { isSelectingDrag = null; });
 
     function jumpToWord(id) {
-      if (isSpeaking) return;
       clearAllTimers();
       const idx = activeList.findIndex(w => w.id === id);
       if (idx !== -1) {
@@ -6556,7 +6453,6 @@ videoMap: {
     }
 
     function studySelected() {
-      if (isSpeaking) return;
       if (selectedWords.size === 0) {
         alert("선택된 단어가 없습니다. 단어를 체크해주세요.");
         return;
@@ -6572,7 +6468,7 @@ videoMap: {
     }
 
     function markCurrent(type) {
-      if (activeList.length === 0 || isSpeaking) return;
+      if (activeList.length === 0) return;
       const current = activeList[currentIndex];
       statusMap[getWordKey(current.id)] = type;
 
@@ -6586,7 +6482,6 @@ videoMap: {
     }
 
     function nextWord() {
-      if (isSpeaking) return;
       clearAllTimers();
       if (currentIndex < activeList.length - 1) {
         currentIndex++;
@@ -6595,7 +6490,6 @@ videoMap: {
     }
 
     function prevWord() {
-      if (isSpeaking) return;
       clearAllTimers();
       if (currentIndex > 0) {
         currentIndex--;
@@ -6630,7 +6524,6 @@ videoMap: {
     }
 
     function startLearning() {
-      if (isSpeaking) return;
       if (wordList.length === 0) {
         alert("현재 카테고리에 등록된 단어가 없습니다.");
         return;
@@ -6651,7 +6544,6 @@ videoMap: {
     }
 
     function startReviewMode() {
-      if (isSpeaking) return;
       const targets = wordList.filter(w => {
         const st = statusMap[getWordKey(w.id)];
         return st === 'unknown' || st === 'review';
@@ -6670,8 +6562,7 @@ videoMap: {
       updateCard();
     }
 
-    function returnToFullMode() {
-      if (isSpeaking) return;
+function returnToFullMode() {
       clearAllTimers();
       currentMode = 'FULL';
       activeList = [...fullActiveList];
@@ -6688,19 +6579,27 @@ videoMap: {
       const linkUrl = cat.urls ? cat.urls[current.id] : null;
 
       let imgHtml = '';
-      if (imgs && imgs.length > 0) {
-        const imgBoxes = imgs.map(src => `<div class="img-box"><img src="${src}" alt="수어 사진"></div>`).join('');
-        imgHtml = `<div class="img-container">${imgBoxes}</div>`;
+      if (imgs) {
+        // 이미지가 단순 문자열일 경우 배열로 자동 변환
+        const imgArray = Array.isArray(imgs) ? imgs : [imgs];
+        if (imgArray.length > 0) {
+          const imgBoxes = imgArray.map(src => `<div class="img-box"><img src="${src}" alt="수어 사진"></div>`).join('');
+          imgHtml = `<div class="img-container">${imgBoxes}</div>`;
+        }
       }
 
       let vidHtml = '';
-      if (vids && vids.length > 0) {
-        const vidBoxes = vids.map(src => `
-          <div class="img-box" style="background:#000;">
-            <video src="${src}" autoplay loop muted playsinline controls></video>
-          </div>
-        `).join('');
-        vidHtml = `<div class="img-container">${vidBoxes}</div>`;
+      if (vids) {
+        // 영상이 단순 문자열일 경우 배열로 자동 변환
+        const vidArray = Array.isArray(vids) ? vids : [vids];
+        if (vidArray.length > 0) {
+          const vidBoxes = vidArray.map(src => `
+            <div class="img-box" style="background:#000;">
+              <video src="${src}" autoplay loop muted playsinline controls></video>
+            </div>
+          `).join('');
+          vidHtml = `<div class="img-container">${vidBoxes}</div>`;
+        }
       }
 
       let infoHtml = '';
@@ -6804,21 +6703,14 @@ videoMap: {
         `;
       }
 
-      const autoPlayCheck = document.getElementById('autoPlayTts');
-      if (autoPlayCheck && autoPlayCheck.checked) {
-        speakCurrentWord(() => {
-          initTimers();
-        });
-      } else {
-        initTimers();
-      }
-
+      initTimers();
       updateStats();
       updateSidebarActive();
     }
 
+    // 정답 토글 (시험 모드 전용)
     function toggleAnswer(isAuto = false) {
-      if (activeList.length === 0 || studyType === 'VOCAB' || isSpeaking) return;
+      if (activeList.length === 0 || studyType === 'VOCAB') return;
       const current = activeList[currentIndex];
       const wordContent = document.getElementById('wordContent');
       isRevealed = isAuto ? true : !isRevealed;
@@ -6906,7 +6798,6 @@ videoMap: {
     }
 
     function resetAll() {
-      if (isSpeaking) return;
       const catTitle = CATEGORIES[currentCatKey]?.title || "현재 과";
       if (confirm(`[${catTitle}]의 모든 채점 상태를 초기화하고 셔플하시겠습니까?`)) {
         clearAllTimers();
@@ -6927,7 +6818,6 @@ videoMap: {
     }
 
     document.addEventListener('keydown', (e) => {
-      if (isSpeaking) return; 
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
       const key = e.key.toLowerCase();
       
