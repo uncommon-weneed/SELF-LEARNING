@@ -1,7 +1,7 @@
 const SIGN_CATEGORIES = {
       "cat1": {
         title: "제12과 나라",
-        disabled: true,
+        disabled: false,
         hidden: false,
         rawData: [
           "1 나라, 국가, 국", "2 외국, 이국, 타국, 해외", "3 동양", "4 서양", "5 아시아",
