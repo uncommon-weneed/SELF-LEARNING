@@ -3,10 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>수어 단어 무한 셔플 & 오답노트 암기장</title>
+  <title>수어 단어 무한 셔플 & 오답노트 암기장 (동작 미러링 & 미디어 트레이너)</title>
+
+  <!-- MediaPipe Holistic & Drawing Utils CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/holistic/holistic.js" crossorigin="anonymous"></script>
+
   <style>
     :root {
-      --img-scale: 1;
+      --img-scale: 1.0;
     }
 
     body { 
@@ -24,8 +30,8 @@
     .app-wrapper { 
       display: flex; 
       gap: 20px; 
-      width: 95%; 
-      max-width: 1180px; 
+      width: 96%; 
+      max-width: 1560px;
       align-items: flex-start; 
       margin-bottom: 30px; 
     }
@@ -35,7 +41,6 @@
     .sidebar-header { font-size: 1rem; font-weight: 700; color: #1e293b; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
     .sidebar-header span { font-size: 0.8rem; background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 10px; }
     
-    /* 카테고리 선택 */
     .category-box { background: #eff6ff; padding: 10px; border-radius: 10px; margin-bottom: 12px; border: 1px solid #bfdbfe; display: flex; flex-direction: column; gap: 6px; }
     .category-box label { font-size: 0.8rem; font-weight: 700; color: #1e40af; }
     .select-cat { width: 100%; padding: 7px 8px; border-radius: 8px; border: 1.5px solid #3b82f6; background: #fff; font-size: 0.85rem; font-weight: 700; color: #1e293b; outline: none; cursor: pointer; }
@@ -67,37 +72,14 @@
     .eye-btn:hover { transform: scale(1.15); }
     
     .sidebar-badge { font-size: 0.65rem; padding: 3px 6px; border-radius: 5px; font-weight: bold; margin-left: 4px; flex-shrink: 0; cursor: pointer; transition: 0.15s; }
-    .sidebar-badge:hover { filter: brightness(0.92); transform: scale(1.05); }
     .badge-none { background: #e2e8f0; color: #64748b; }
     .badge-known { background: #dcfce7; color: #15803d; }
     .badge-unknown { background: #fee2e2; color: #b91c1c; }
     .badge-review { background: #fef3c7; color: #b45309; }
 
-    /* 모바일 높이 조절 바 */
-    .resizer-bar {
-      display: none;
-      width: 100%;
-      height: 22px;
-      cursor: row-resize;
-      user-select: none;
-      touch-action: none;
-      align-items: center;
-      justify-content: center;
-      margin: -4px 0;
-      z-index: 10;
-    }
-    .resizer-pill {
-      width: 54px;
-      height: 6px;
-      background: #94a3b8;
-      border-radius: 4px;
-      transition: background 0.15s, transform 0.15s;
-    }
-    .resizer-bar:hover .resizer-pill,
-    .resizer-bar.dragging .resizer-pill {
-      background: #4f46e5;
-      transform: scaleY(1.3);
-    }
+    /* 모바일 리사이저 */
+    .resizer-bar { display: none; width: 100%; height: 22px; cursor: row-resize; user-select: none; touch-action: none; align-items: center; justify-content: center; margin: -4px 0; z-index: 10; }
+    .resizer-pill { width: 54px; height: 6px; background: #94a3b8; border-radius: 4px; }
 
     /* 메인 카드 */
     .card-container { background: #fff; padding: 24px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); flex: 1; text-align: center; position: relative; min-width: 0; }
@@ -118,7 +100,6 @@
     .top-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; justify-content: center; }
     .control-box { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.82rem; font-weight: 600; color: #475569; background: #f8fafc; padding: 7px 10px; border-radius: 10px; border: 1px solid #e2e8f0; }
     
-    /* 모드 전환 스위치 박스 */
     .type-switch-box { background: #f8fafc; border-color: #cbd5e1; }
     .btn-type-toggle { border: 1px solid #cbd5e1; background: #fff; color: #475569; border-radius: 6px; padding: 4px 9px; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: 0.15s; }
     .btn-type-toggle.active { background: #6366f1; color: #fff; border-color: #4f46e5; }
@@ -137,22 +118,130 @@
     .btn-order-toggle { border: 1px solid #93c5fd; background: #fff; color: #1e40af; border-radius: 6px; padding: 3px 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: 0.15s; }
     .btn-order-toggle.active { background: #3b82f6; color: #fff; border-color: #2563eb; }
 
-    .word-box { min-height: 220px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1.35rem; font-weight: 700; color: #0f172a; margin-bottom: 15px; border: 2px dashed #cbd5e1; border-radius: 14px; padding: 18px; position: relative; word-break: keep-all; line-height: 1.5; }
-    .status-tag { position: absolute; top: 10px; right: 10px; font-size: 0.75rem; padding: 3px 8px; border-radius: 6px; font-weight: bold; }
-    .tag-known { background: #dcfce7; color: #15803d; }
-    .tag-unknown { background: #fee2e2; color: #b91c1c; }
-    .tag-review { background: #fef3c7; color: #b45309; }
+    /* 최상단 전면 배치 단어 헤더 */
+    .top-word-banner {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 12px 20px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+    }
+    .top-word-title {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+    }
 
-    .answer-container { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; width: 100%; text-align: left; }
-    .desc-text { font-size: 0.95rem; font-weight: 500; color: #334155; background: #f8fafc; padding: 14px; border-radius: 10px; box-sizing: border-box; line-height: 1.55; border: 1px solid #e2e8f0; }
-    
-    .img-container { display: flex; gap: 15px; justify-content: center; width: 100%; flex-wrap: wrap; margin-top: 10px; }
-    .img-box { width: calc(260px * var(--img-scale)); height: calc(195px * var(--img-scale)); max-width: 100%; background: #ffffff; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid #cbd5e1; padding: 6px; box-sizing: border-box; box-shadow: 0 3px 8px rgba(0,0,0,0.06); transition: width 0.2s ease, height 0.2s ease; }
-    .img-box img, .img-box video { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; }
+    /* 듀얼 미디어 레이아웃 (PC: 1:1 대형 가로 분할) */
+    .dual-viewport-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      margin-bottom: 18px;
+      width: 100%;
+    }
+    @media (min-width: 1024px) {
+      .dual-viewport-grid.dual-active {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
 
-    /* 국립국어원 사전 웹페이지 바로가기 버튼 */
-    .dict-link-wrap { text-align: center; margin-top: 12px; }
-    .dict-link-btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; background: #4f46e5; color: #ffffff; text-decoration: none; border-radius: 10px; font-size: 0.88rem; font-weight: 700; box-shadow: 0 3px 6px rgba(79, 70, 229, 0.25); transition: 0.15s ease; }
+    .viewport-box {
+      width: 100%;
+      height: calc(340px * var(--img-scale));
+      max-height: 75vh;
+      background: #0f172a;
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #cbd5e1;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+      transition: height 0.2s ease;
+    }
+    .viewport-box.webcam-live { border-color: #6366f1; }
+    .viewport-box video, .viewport-box canvas, .viewport-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #000;
+    }
+    .viewport-box canvas {
+      transform: scaleX(-1);
+    }
+
+    .vp-label {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(4px);
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      z-index: 10;
+    }
+
+    /* 하단 설명 및 힌트 컨테이너 */
+    .detail-container { min-height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 15px; border: 2px dashed #cbd5e1; border-radius: 14px; padding: 16px; position: relative; word-break: keep-all; line-height: 1.5; background: #fff; }
+    .answer-container { display: flex; flex-direction: column; gap: 10px; width: 100%; text-align: left; }
+    .desc-text { font-size: 0.95rem; font-weight: 500; color: #334155; background: #f8fafc; padding: 12px 14px; border-radius: 10px; box-sizing: border-box; line-height: 1.55; border: 1px solid #e2e8f0; }
+
+    .mirrored { transform: scaleX(-1) !important; }
+
+    .fingerspell-box {
+      padding: 10px 14px;
+      background: #fdf4ff;
+      border: 1.5px solid #f0abfc;
+      border-radius: 12px;
+      text-align: left;
+      font-size: 0.88rem;
+    }
+    .fingerspell-title {
+      font-weight: 700;
+      color: #86198f;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .fingerspell-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .jamo-card {
+      background: #ffffff;
+      border: 1px solid #e879f9;
+      border-radius: 6px;
+      padding: 4px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .jamo-char {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #a21caf;
+    }
+    .jamo-name {
+      font-size: 0.68rem;
+      color: #64748b;
+      margin-top: 1px;
+    }
+
+    .dict-link-wrap { text-align: center; margin-top: 4px; }
+    .dict-link-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: #4f46e5; color: #ffffff; text-decoration: none; border-radius: 10px; font-size: 0.85rem; font-weight: 700; box-shadow: 0 3px 6px rgba(79, 70, 229, 0.25); transition: 0.15s ease; }
     .dict-link-btn:hover { background: #4338ca; transform: translateY(-1px); }
 
     .btn-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; }
@@ -177,140 +266,35 @@
     .shortcut-info { margin-top: 15px; font-size: 0.78rem; color: #64748b; background: #f8fafc; padding: 10px; border-radius: 8px; text-align: left; line-height: 1.5; }
     .shortcut-info b { color: #334155; }
 
-    /* 환영 / 시작 대시보드 오버레이 */
+    /* 환영 대시보드 */
     .welcome-overlay {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
+      top: 0; left: 0; width: 100vw; height: 100vh;
       background: rgba(15, 23, 42, 0.82);
       backdrop-filter: blur(5px);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 2000;
-      padding: 16px;
-      box-sizing: border-box;
+      display: flex; justify-content: center; align-items: center;
+      z-index: 2000; padding: 16px; box-sizing: border-box;
     }
     .welcome-card {
-      background: #ffffff;
-      padding: 34px 28px;
-      border-radius: 24px;
-      max-width: 520px;
-      width: 100%;
-      text-align: center;
+      background: #ffffff; padding: 34px 28px; border-radius: 24px; max-width: 520px; width: 100%; text-align: center;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-      animation: popIn 0.3s ease-out forwards;
     }
-    @keyframes popIn {
-      from { opacity: 0; transform: scale(0.92); }
-      to { opacity: 1; transform: scale(1); }
-    }
-    .welcome-badge {
-      display: inline-block;
-      background: #e0e7ff;
-      color: #4338ca;
-      font-size: 0.8rem;
-      font-weight: 800;
-      padding: 4px 14px;
-      border-radius: 20px;
-      margin-bottom: 12px;
-    }
-    .welcome-title {
-      margin: 0 0 14px 0;
-      color: #0f172a;
-      font-size: 1.45rem;
-      font-weight: 800;
-      line-height: 1.4;
-    }
-    .welcome-quote-box {
-      background: #f8fafc;
-      border-left: 4px solid #6366f1;
-      padding: 14px 16px;
-      border-radius: 0 12px 12px 0;
-      margin-bottom: 22px;
-      text-align: left;
-    }
-    .welcome-quote {
-      margin: 0;
-      font-size: 0.95rem;
-      color: #334155;
-      font-weight: 600;
-      line-height: 1.6;
-      word-break: keep-all;
-    }
-    .welcome-options {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-bottom: 22px;
-      text-align: left;
-    }
-    .welcome-label {
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: #475569;
-    }
-    .welcome-mode-select {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .btn-mode-choice {
-      padding: 12px 10px;
-      border-radius: 12px;
-      border: 2px solid #e2e8f0;
-      background: #f8fafc;
-      font-size: 0.88rem;
-      font-weight: 700;
-      color: #475569;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      transition: all 0.2s;
-    }
-    .btn-mode-choice span {
-      font-size: 0.72rem;
-      font-weight: normal;
-      color: #64748b;
-    }
-    .btn-mode-choice.active {
-      border-color: #6366f1;
-      background: #eff6ff;
-      color: #4338ca;
-    }
-    .btn-mode-choice.active span {
-      color: #4f46e5;
-    }
-    .btn-start-app {
-      background: #4f46e5;
-      color: white;
-      width: 100%;
-      padding: 15px;
-      font-size: 1.05rem;
-      font-weight: 800;
-      border-radius: 14px;
-      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .btn-start-app:hover {
-      background: #4338ca;
-      transform: translateY(-2px);
-    }
+    .welcome-badge { display: inline-block; background: #e0e7ff; color: #4338ca; font-size: 0.8rem; font-weight: 800; padding: 4px 14px; border-radius: 20px; margin-bottom: 12px; }
+    .welcome-title { margin: 0 0 14px 0; color: #0f172a; font-size: 1.45rem; font-weight: 800; }
+    .welcome-options { display: flex; flex-direction: column; gap: 12px; margin-bottom: 22px; text-align: left; }
+    .welcome-mode-select { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .btn-mode-choice { padding: 12px 10px; border-radius: 12px; border: 2px solid #e2e8f0; background: #f8fafc; font-size: 0.88rem; font-weight: 700; color: #475569; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .btn-mode-choice.active { border-color: #6366f1; background: #eff6ff; color: #4338ca; }
+    .btn-start-app { background: #4f46e5; color: white; width: 100%; padding: 15px; font-size: 1.05rem; font-weight: 800; border-radius: 14px; cursor: pointer; }
 
     /* 중간 결과 모달 */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
-    .modal-content { background: #fff; padding: 24px; border-radius: 20px; width: 90%; max-width: 440px; text-align: center; box-shadow: 0 20px 25px rgba(0,0,0,0.15); }
-    .modal-content h2 { margin-top: 0; color: #0f172a; font-size: 1.25rem; }
+    .modal-content { background: #fff; padding: 24px; border-radius: 20px; width: 90%; max-width: 440px; text-align: center; }
     .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f8fafc; padding: 12px; border-radius: 12px; margin: 15px 0; text-align: left; font-size: 0.9rem; }
-    .modal-unchecked-box { background: #fee2e2; border-radius: 8px; padding: 10px; max-height: 100px; overflow-y: auto; text-align: left; font-size: 0.82rem; color: #991b1b; margin-bottom: 15px; word-break: break-all; line-height: 1.4; }
+    .modal-unchecked-box { background: #fee2e2; border-radius: 8px; padding: 10px; max-height: 100px; overflow-y: auto; text-align: left; font-size: 0.82rem; color: #991b1b; margin-bottom: 15px; }
     .btn-resume { background: #6366f1; color: white; width: 100%; padding: 12px; font-size: 0.95rem; }
 
-    /* 출처 표기 반응형 푸터 */
+    /* 출처 표기 푸터 */
     .source-footer {
       width: 100%;
       margin-top: auto;
@@ -319,9 +303,8 @@
       border-top: 1px solid #e2e8f0;
       box-sizing: border-box;
     }
-
     .footer-container {
-      max-width: 1180px;
+      max-width: 1560px;
       margin: 0 auto;
       display: flex;
       flex-direction: column;
@@ -329,72 +312,20 @@
       text-align: center;
       gap: 10px;
     }
+    .source-text { margin: 0; font-size: 0.82rem; line-height: 1.6; color: #64748b; }
+    .source-text strong { color: #1e293b; font-weight: 600; }
+    .badge-wrapper { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    .kogl-badge { display: inline-block; padding: 3px 8px; background-color: #f1f5f9; border: 1px solid #cbd5e1; color: #475569; font-size: 0.72rem; font-weight: 600; border-radius: 6px; }
+    .source-link { font-size: 0.78rem; color: #4f46e5; text-decoration: none; font-weight: 600; }
 
-    .source-text {
-      margin: 0;
-      font-size: 0.82rem;
-      line-height: 1.6;
-      color: #64748b;
-      word-break: keep-all;
-    }
-
-    .source-text strong {
-      color: #1e293b;
-      font-weight: 600;
-    }
-
-    .badge-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .kogl-badge {
-      display: inline-block;
-      padding: 3px 8px;
-      background-color: #f1f5f9;
-      border: 1px solid #cbd5e1;
-      color: #475569;
-      font-size: 0.72rem;
-      font-weight: 600;
-      border-radius: 6px;
-    }
-
-    .source-link {
-      font-size: 0.78rem;
-      color: #4f46e5;
-      text-decoration: none;
-      font-weight: 600;
-      transition: color 0.15s ease-in-out;
-    }
-
-    .source-link:hover {
-      text-decoration: underline;
-      color: #3730a3;
-    }
-
-    @media (min-width: 769px) {
+    @media (min-width: 1024px) {
       .sidebar { height: auto !important; max-height: 88vh; }
       .resizer-bar { display: none !important; }
-      .footer-container {
-        flex-direction: row;
-        justify-content: space-between;
-        text-align: left;
-      }
-      .source-text {
-        max-width: 75%;
-      }
-      .badge-wrapper {
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 5px;
-      }
+      .footer-container { flex-direction: row; justify-content: space-between; text-align: left; }
     }
 
-    @media (max-width: 768px) {
-      .app-wrapper { flex-direction: column; align-items: center; gap: 6px; margin-bottom: 20px; }
+    @media (max-width: 1023px) {
+      .app-wrapper { flex-direction: column; align-items: center; gap: 6px; }
       .sidebar { width: 100%; height: 260px; max-height: none; }
       .resizer-bar { display: flex; }
       .top-controls { flex-direction: column; align-items: stretch; }
@@ -404,30 +335,24 @@
 </head>
 <body>
 
-  <!-- 첫 접속/새로고침 환영 오버레이 -->
+  <!-- 환영 대시보드 -->
   <div class="welcome-overlay" id="welcomeOverlay">
     <div class="welcome-card">
       <div class="welcome-badge">수어교실 중급반 학습 서포터</div>
       <h1 class="welcome-title">오늘의 수어 학습을 시작합니다 🤟</h1>
-      
-      <div class="welcome-quote-box">
-        <p class="welcome-quote" id="welcomeMessage">반가워요! 손끝으로 세상과 더 깊이 통하는 시간입니다.</p>
-      </div>
-
       <div class="welcome-options">
-        <label class="welcome-label">학습 모드 선택</label>
+        <label style="font-size:0.85rem; font-weight:700; color:#475569;">학습 모드 선택</label>
         <div class="welcome-mode-select">
           <button type="button" class="btn-mode-choice active" id="btnChoiceTest" onclick="selectInitialStudyType('TEST')">
             📝 시험 모드
-            <span>단어명 확인 후 정답 열기</span>
+            <span style="font-size:0.72rem; color:#64748b;">단어명 확인 후 정답 열기</span>
           </button>
           <button type="button" class="btn-mode-choice" id="btnChoiceVocab" onclick="selectInitialStudyType('VOCAB')">
             📖 단어장 모드
-            <span>정답 처음부터 공개</span>
+            <span style="font-size:0.72rem; color:#64748b;">정답 처음부터 공개</span>
           </button>
         </div>
       </div>
-
       <button class="btn-start-app" onclick="enterStudyRoom()">단어장 바로 시작하기 ✨</button>
     </div>
   </div>
@@ -453,13 +378,10 @@
             <input type="checkbox" id="globalHideCheck" onchange="toggleGlobalHide(this.checked)"> 
             🙈 전체 마스킹
           </label>
-
-          <div>
-            <select id="sidebarOrder" class="select-order" onchange="renderSidebar()">
-              <option value="num">번호순 정렬</option>
-              <option value="study" selected>학습순(셔플)</option>
-            </select>
-          </div>
+          <select id="sidebarOrder" class="select-order" onchange="renderSidebar()">
+            <option value="num">번호순</option>
+            <option value="study" selected>학습순(셔플)</option>
+          </select>
         </div>
         
         <div class="sidebar-actions">
@@ -473,11 +395,11 @@
     </div>
 
     <!-- 모바일 전용 높이 조절 바 -->
-    <div class="resizer-bar" id="dragResizer" title="상하로 드래그하여 단어 목록 높이 조절">
+    <div class="resizer-bar" id="dragResizer" title="상하로 드래그하여 높이 조절">
       <div class="resizer-pill"></div>
     </div>
 
-    <!-- 우측 학습 카드 -->
+    <!-- 우측 메인 학습 카드 -->
     <div class="card-container">
       <div class="mode-badge-wrap">
         <div class="mode-badge" id="modeName">전체 학습 모드</div>
@@ -491,88 +413,124 @@
         <span class="stat-review">재확인: <b id="cntReview">0</b></span>
       </div>
 
-      <!-- 상단 분리형 제어바 -->
+      <!-- 상단 분리형 제어바 (재생/정지, 반복 횟수, 음성 횟수 완벽 지원) -->
       <div class="top-controls">
-        <!-- 모드 전환 (시험 모드 vs 단어장 모드) -->
         <div class="control-box type-switch-box">
           <span>모드:</span>
           <button id="btnSwitchTest" class="btn-type-toggle active" onclick="setStudyType('TEST')">📝 시험</button>
           <button id="btnSwitchVocab" class="btn-type-toggle" onclick="setStudyType('VOCAB')">📖 단어장</button>
         </div>
 
+        <!-- 동영상 제어 박스 -->
+        <div class="control-box" style="background: #f0fdfa; border-color: #99f6e4; gap:6px;">
+          <button id="btnVideoPlayPause" class="btn-type-toggle" onclick="toggleVideoPlayPause()" title="동영상 재생/일시정지">⏸️ 정지</button>
+          <button id="btnMirror" class="btn-type-toggle" onclick="toggleMirrorMode()" title="동영상 좌우 반전">🪞 거울</button>
+          
+          <select id="videoSpeedSelect" onchange="changeVideoSpeed(this.value)" style="border: 1px solid #5eead4; border-radius: 4px; outline: none; padding: 2px 4px; font-size: 0.8rem; background: #fff;" title="수어 동영상 속도">
+            <option value="0.5">0.5x</option>
+            <option value="0.75">0.75x</option>
+            <option value="1.0" selected>1.0x</option>
+            <option value="1.25">1.25x</option>
+            <option value="1.5">1.5x</option>
+          </select>
+
+          <!-- 영상 반복 횟수 선택 -->
+          <select id="videoLoopCountSelect" onchange="changeVideoLoopCount(this.value)" style="border: 1px solid #5eead4; border-radius: 4px; outline: none; padding: 2px 4px; font-size: 0.8rem; background: #fff;" title="동영상 반복 재생 횟수">
+            <option value="999" selected>영상: 무한</option>
+            <option value="1">영상: 1회</option>
+            <option value="2">영상: 2회</option>
+            <option value="3">영상: 3회</option>
+            <option value="5">영상: 5회</option>
+          </select>
+
+          <button id="btnWebcam" class="btn-type-toggle" onclick="toggleHolisticWebcam()" style="background:#0f172a; color:#fff;" title="상체 위치 및 손가락 관절 미러링 캠">📷 동작 캠</button>
+        </div>
+
         <div class="control-box timer-reveal-box" id="revealTimerBox">
-          <label style="cursor:pointer;"><input type="checkbox" id="useRevealTimer" onchange="initTimers()"> ⏱️ 정답 자동 열기</label>
+          <label style="cursor:pointer;"><input type="checkbox" id="useRevealTimer" onchange="initTimers()"> ⏱️ 자동 열기</label>
           <select id="revealSecs" onchange="initTimers()">
             <option value="1">1초</option>
             <option value="2">2초</option>
             <option value="3" selected>3초</option>
-            <option value="4">4초</option>
             <option value="5">5초</option>
-            <option value="6">6초</option>
-            <option value="7">7초</option>
-            <option value="8">8초</option>
-            <option value="9">9초</option>
-            <option value="10">10초</option>
           </select>
           <span id="revealCountdown" class="timer-badge badge-reveal-cd">-</span>
         </div>
 
         <div class="control-box timer-next-box">
-          <label style="cursor:pointer;"><input type="checkbox" id="useNextTimer" onchange="initTimers()"> ⏭️ 다음 문제 자동 넘김</label>
+          <label style="cursor:pointer;"><input type="checkbox" id="useNextTimer" onchange="initTimers()"> ⏭️ 자동 넘김</label>
           <select id="nextSecs" onchange="initTimers()">
             <option value="1">1초</option>
             <option value="2" selected>2초</option>
             <option value="3">3초</option>
-            <option value="4">4초</option>
             <option value="5">5초</option>
-            <option value="6">6초</option>
-            <option value="7">7초</option>
-            <option value="8">8초</option>
-            <option value="9">9초</option>
-            <option value="10">10초</option>
           </select>
           <span id="nextCountdown" class="timer-badge badge-next-cd">-</span>
         </div>
 
         <div class="control-box order-box">
-          <span>정렬:</span>
           <button id="btnShuffle" class="btn-order-toggle active" onclick="shuffleCurrentList()">🔀 셔플</button>
           <button id="btnNumeric" class="btn-order-toggle" onclick="sortCurrentListNumeric()">🔢 번호순</button>
         </div>
 
+        <!-- 슬라이더 크기 조절 -->
         <div class="control-box">
           <label for="imgScale">🔍 크기:</label>
-          <input type="range" id="imgScale" min="0.5" max="3.0" step="0.1" value="1.0" oninput="changeImgSize(this.value)">
+          <input type="range" id="imgScale" min="0.6" max="2.5" step="0.1" value="1.0" oninput="changeImgSize(this.value)" title="사전 영상 및 AI 캠 뷰포트 크기 조절">
         </div>
 
-        <!-- TTS 음성 설정, 재생속도(0.25배~2배), 자동재생 제어박스 -->
-        <div class="control-box" style="background:#fefce8; border-color:#fde047; gap:8px;">
-          <span>🗣️ :</span>
-          <select id="ttsVoiceSelect" style="border: 1px solid #facc15; border-radius: 4px; outline: none; padding: 2px 4px; font-size: 0.8rem; background: #fff;">
-            <option value="">음성 로딩중...</option>
-          </select>
-          
-          <select id="ttsRateSelect" style="border: 1px solid #facc15; border-radius: 4px; outline: none; padding: 2px 4px; font-size: 0.8rem; background: #fff;" title="음성 재생 속도 선택">
-            <option value="0.25">0.25배속</option>
-            <option value="0.5">0.5배속</option>
-            <option value="0.75">0.75배속</option>
-            <option value="1.0" selected>1.0배속</option>
-            <option value="1.25">1.25배속</option>
-            <option value="1.5">1.5배속</option>
-            <option value="1.75">1.75배속</option>
-            <option value="2.0">2.0배속</option>
+        <!-- TTS 음성 제어박스 (반복 횟수 추가) -->
+        <div class="control-box" style="background:#fefce8; border-color:#fde047; gap:6px;">
+          <span>🗣️:</span>
+          <select id="ttsVoiceSelect" style="border: 1px solid #facc15; border-radius: 4px; outline: none; padding: 2px 4px; font-size: 0.8rem; background: #fff;"></select>
+          <select id="ttsRateSelect" style="border: 1px solid #facc15; border-radius: 4px; outline: none; padding: 2px 4px; font-size: 0.8rem; background: #fff;" title="음성 속도">
+            <option value="0.5">0.5배</option>
+            <option value="0.75">0.75배</option>
+            <option value="1.0" selected>1.0배</option>
+            <option value="1.25">1.25배</option>
+            <option value="1.5">1.5배</option>
           </select>
 
-          <label style="cursor:pointer; display:inline-flex; align-items:center; gap:3px;" title="단어가 넘어갈 때 자동으로 음성을 재생하고, 음성이 끝난 뒤 다음 진행">
-            <input type="checkbox" id="autoPlayTts" > 🔄
+          <!-- TTS 음성 반복 횟수 선택 -->
+          <select id="ttsRepeatCountSelect" style="border: 1px solid #facc15; border-radius: 4px; outline: none; padding: 2px 4px; font-size: 0.8rem; background: #fff;" title="음성 반복 재생 횟수">
+            <option value="1" selected>음성: 1회</option>
+            <option value="2">음성: 2회</option>
+            <option value="3">음성: 3회</option>
+            <option value="5">음성: 5회</option>
+          </select>
+
+          <label style="cursor:pointer;" title="단어가 바뀔 때 자동 음성 듣기">
+            <input type="checkbox" id="autoPlayTts"> 🔄
           </label>
-          <button onclick="speakCurrentWord()" style="background:#eab308; color:#fff; border:none; border-radius:4px; padding:3px 8px; font-size:0.75rem; cursor:pointer;" title="현재 단어 음성 듣기">🔊</button>
+          <button onclick="speakCurrentWord()" style="background:#eab308; color:#fff; border:none; border-radius:4px; padding:3px 8px; font-size:0.75rem; cursor:pointer;">🔊</button>
         </div>
       </div>
 
-      <div class="word-box" id="display">
-        <div id="statusTag"></div>
-        <div id="wordContent">학습할 단어를 선택하거나 시작 버튼을 누르세요</div>
+      <!-- ★ 최상단 전면 배치 단어 헤더 바 ★ -->
+      <div class="top-word-banner" id="topWordBanner">
+        <div class="top-word-title" id="topWordTitle">단어를 불러오는 중...</div>
+        <div id="topStatusTag"></div>
+      </div>
+
+      <!-- 듀얼 뷰포트 (PC: 사전 영상과 AI 캠 1:1 나란히 배치) -->
+      <div class="dual-viewport-grid" id="dualGrid">
+        <!-- 1. 표준 사전 동영상 뷰어 -->
+        <div class="viewport-box" id="dictViewport">
+          <span class="vp-label">🎬 국립국어원 표준 수어 영상</span>
+          <div id="dictMediaTarget" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center;"></div>
+        </div>
+
+        <!-- 2. 순수 신체/양손 스켈레톤 미러링 캠 (체크/채점 UI 완전 제거) -->
+        <div class="viewport-box webcam-live" id="webcamViewport" style="display:none;">
+          <span class="vp-label" style="background: rgba(22, 101, 52, 0.85);">🤖 내 동작 스켈레톤 미러링</span>
+          <video id="mpVideoFeed" style="display:none;" playsinline muted autoplay></video>
+          <canvas id="mpCanvasFeed" width="640" height="480"></canvas>
+        </div>
+      </div>
+
+      <!-- 하단 설명 및 힌트 컨테이너 -->
+      <div class="detail-container" id="detailContainer">
+        <div id="detailContent">학습할 단어를 선택하거나 시작 버튼을 누르세요</div>
       </div>
       
       <div class="btn-group">
@@ -594,16 +552,14 @@
       <button class="btn-reset" onclick="resetAll()">현재 카테고리 마킹 초기화 및 셔플 [R]</button>
 
       <div class="shortcut-info">
-        ⌨️ <b>단축키 안내</b><br>
-        • <b>1 / A</b>: 아는 문제 | <b>2 / S</b>: 모르는 문제 | <b>3 / D</b>: 재확인 필요<br>
-        • <b>Space / W</b>: 정답/뜻 보기(시험 모드) | <b>Q / E</b>: 이전 / 다음 단어<br>
-        • <b>P</b>: 중간 결과 확인 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <b>R</b>: 현재 카테고리 초기화<br>
-        • <b>N</b>: 새로 학습 시작 (셔플) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <b>O</b>: 오답/전체 모드 전환
+        ⌨️ <b>단축키 안내:</b> 1/A (아는 문제), 2/S (모르는 문제), 3/D (재확인), Space/W (정답 열기), Q/E (이전/다음)<br>
+        • <b>체크박스 드래그 다중 선택:</b> 단어 목록의 체크박스를 마우스로 긁어내리듯 드래그하여 빠르게 연속 선택할 수 있습니다.<br>
+        • <b>영상 & 음성 제어:</b> 동영상 재생/일시정지 토글, 영상 반복 횟수(1~5회/무한), 음성 반복 횟수(1~5회)를 설정하여 학습 템포를 조절할 수 있습니다.
       </div>
     </div>
   </div>
 
-  <!-- 출처 표기 반응형 푸터 -->
+  <!-- 출처 표기 푸터 -->
   <footer class="source-footer">
     <div class="footer-container">
       <p class="source-text">
@@ -624,42 +580,19 @@
     <div class="modal-content">
       <h2>📊 중간 학습 결과</h2>
       <div class="modal-grid">
-        <div>• 전체 단어: <b id="mTotal">0</b>개</div>
-        <div>• 체크 완료: <b id="mChecked">0</b>개</div>
+        <div>• 전체: <b id="mTotal">0</b>개</div>
+        <div>• 완료: <b id="mChecked">0</b>개</div>
         <div>• 아는 단어: <b id="mKnown" style="color:#16a34a;">0</b>개</div>
         <div>• 모르는 단어: <b id="mUnknown" style="color:#dc2626;">0</b>개</div>
-        <div>• 재확인: <b id="mReview" style="color:#d97706;">0</b>개</div>
-        <div>• 미체크(안풀음): <b id="mUnchecked" style="color:#e11d48;">0</b>개</div>
-      </div>
-
-      <div style="text-align: left; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; color: #475569;">
-        📌 풀지 않은(미체크) 문제 목록:
       </div>
       <div class="modal-unchecked-box" id="mUncheckedList">-</div>
-
-      <button class="btn-resume" onclick="togglePauseModal()">계속해서 학습하기 [P / Esc]</button>
+      <button class="btn-resume" onclick="togglePauseModal()">계속 학습하기 [P / Esc]</button>
     </div>
   </div>
 
-  <!-- 1. 외부 수어 데이터 파일 불러오기 -->
   <script src="js/sign_data.js"></script>
 
-  <!-- 2. 메인 실행 및 제어 로직 -->
   <script>
-    const WELCOME_MESSAGES = [
-      "손끝으로 세상과 따뜻하게 마음을 잇는 시간입니다. 중급반 여러분을 환영합니다! 🤟",
-      "표정과 손짓이 풍성해질수록 여러분의 수어도 더욱 깊어집니다. 오늘도 화이팅! ✨",
-      "중급반의 실력은 꾸준한 복습에서 피어납니다. 자연스러운 손길을 위해 오늘도 전진!",
-      "익숙해진 지문자와 단어 위에 자신감을 얹어보세요. 여러분의 손길을 응원합니다. 🌟",
-      "머리로 기억하고, 손과 표정으로 완성하는 수어! 오늘도 멋진 표현 기대할게요.",
-      "농인과 농사회의 진정한 벗으로 한 걸음 더! 즐거운 마음으로 시작해 볼까요? 💡",
-      "중급 도약의 핵심은 디테일한 비수지기호와 매끄러운 연결입니다. 함께 연습해요!",
-      "망설이지 말고 손을 움직여 보세요. 연습한 만큼 여러분의 손끝은 정직하게 답합니다. 👏",
-      "오늘 익힌 수어 단어 하나가 내일의 소중한 대화를 이어줍니다. 즐겁게 학습하세요!",
-      "손끝의 작은 움직임이 누군가에게는 큰 울림이 됩니다. 중급반 여러분, 힘내세요! 🌈"
-    ];
-
-    // 기본 카테고리 우선 순서 지정 (필요 시 원하는 키 순서로 변경 가능)
     const CATEGORY_ORDER = [
       "cat1", "cat2", "cat3", "cat4", "cat5", "cat6", "cat7", "cat8", "cat9", "cat10",
       "cat11", "cat12", "cat13", "cat14", "cat15", "cat16", "cat17", "cat18", "cat19", "cat20",
@@ -668,65 +601,253 @@
       "cat_life", "cat_food", "cat_housing"
     ];
 
-    // 외부 sign_data.js의 SIGN_CATEGORIES와 연동 (오류 방지 안전 처리)
     const CATEGORIES = (typeof SIGN_CATEGORIES !== 'undefined') ? SIGN_CATEGORIES : {};
 
     let currentCatKey = CATEGORY_ORDER[0];
-    let wordList = [];
-    let fullActiveList = [];  
-    let activeList = [];      
-    let currentIndex = 0;
-    let savedFullIndex = 0;   
-    let isRevealed = false;
-    let isShuffled = true;
-    
-    let currentMode = 'FULL'; 
-    let studyType = 'TEST'; 
-    const statusMap = {};
-    
-    const selectedWords = new Set();
-    const hiddenWords = new Set();
+    let wordList = [], fullActiveList = [], activeList = [];
+    let currentIndex = 0, savedFullIndex = 0;
+    let isRevealed = false, isShuffled = true;
+    let currentMode = 'FULL', studyType = 'TEST';
+    const statusMap = {}, selectedWords = new Set(), hiddenWords = new Set();
     let isGlobalHidden = false;
+
+    // ★ 체크박스 마우스 드래그 다중 선택 상태 변수 복원
     let isSelectingDrag = null;
 
-    let ttsVoices = [];
-    let isSpeaking = false; 
+    let ttsVoices = [], isSpeaking = false;
+    let isMirrored = false, currentVideoSpeed = 1.0;
 
-    function getWordKey(id) {
-      return `${currentCatKey}_${id}`;
+    // 동영상 및 음성 반복 제어 상태
+    let isVideoPlaying = true;
+    let targetVideoLoopCount = 999;
+    let currentVideoPlayCount = 0;
+
+    // MediaPipe Holistic 상태
+    let isHolisticRunning = false;
+    let holistic = null;
+    let cameraInstance = null;
+
+    // 한글 분해
+    const CHO_SUNG = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+    const JUNG_SUNG = ["ㅏ","ㅐ","ㅑ","ㅒ","ㅓ","ㅔ","ㅕ","ㅖ","ㅗ","ㅘ","ㅙ","ㅚ","ㅛ","ㅜ","ㅝ","ㅞ","ㅟ","ㅠ","ㅡ","ㅢ","ㅣ"];
+    const JONG_SUNG = ["","ㄱ","ㄲ","ㄳ","ㄴ","ㄵ","ㄶ","ㄷ","ㄹ","ㄺ","ㄻ","ㄼ","ㄽ","ㄾ","ㄿ","ㅀ","ㅁ","ㅂ","ㅄ","ㅅ","ㅆ","ㅇ","ㅈ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+
+    function decomposeHangul(word) {
+      const results = [];
+      const cleanWord = word.replace(/[^가-힣]/g, '');
+      for (let i = 0; i < cleanWord.length; i++) {
+        const code = cleanWord.charCodeAt(i) - 0xAC00;
+        if (code >= 0 && code <= 11171) {
+          const cho = Math.floor(code / 588);
+          const jung = Math.floor((code - (cho * 588)) / 28);
+          const jong = code % 28;
+          results.push({ type: '초성', char: CHO_SUNG[cho] });
+          results.push({ type: '중성', char: JUNG_SUNG[jung] });
+          if (jong > 0) results.push({ type: '종성', char: JONG_SUNG[jong] });
+        }
+      }
+      return results;
     }
+
+    function getFingerspellHtml(text) {
+      const clean = text.replace(/^\d+\s*/, '').split(',')[0].trim();
+      const jamos = decomposeHangul(clean);
+      if (jamos.length === 0) return '';
+      const listHtml = jamos.map(j => `
+        <div class="jamo-card">
+          <span class="jamo-char">${j.char}</span>
+          <span class="jamo-name">${j.type}</span>
+        </div>
+      `).join('');
+      return `
+        <div class="fingerspell-box">
+          <div class="fingerspell-title">🖐️ 지문자 자모 분해 (${clean})</div>
+          <div class="fingerspell-list">${listHtml}</div>
+        </div>
+      `;
+    }
+
+    // --- ★ 순수 신체 및 양손 관절 스켈레톤 미러링 캠 (채점 HUD 완전 제거) ★ ---
+    async function toggleHolisticWebcam() {
+      const btn = document.getElementById('btnWebcam');
+      const grid = document.getElementById('dualGrid');
+      const vp = document.getElementById('webcamViewport');
+      const videoElem = document.getElementById('mpVideoFeed');
+
+      if (!isHolisticRunning) {
+        try {
+          btn.innerText = "⏳ AI 로딩중...";
+          vp.style.display = 'flex';
+          grid.classList.add('dual-active');
+
+          holistic = new Holistic({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`
+          });
+
+          holistic.setOptions({
+            modelComplexity: 1,
+            smoothLandmarks: true,
+            minDetectionConfidence: 0.55,
+            minTrackingConfidence: 0.55
+          });
+
+          holistic.onResults((results) => {
+            const canvasElem = document.getElementById('mpCanvasFeed');
+            if (!canvasElem) return;
+            const ctx = canvasElem.getContext('2d');
+            ctx.save();
+            ctx.clearRect(0, 0, canvasElem.width, canvasElem.height);
+            ctx.drawImage(results.image, 0, 0, canvasElem.width, canvasElem.height);
+
+            // 1. 머리/어깨/가슴/몸통 전신 스켈레톤
+            if (results.poseLandmarks) {
+              drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, { color: '#ffffff', lineWidth: 3 });
+              drawLandmarks(ctx, results.poseLandmarks, { color: '#38bdf8', lineWidth: 1, radius: 3 });
+            }
+
+            // 2. 오른손 스켈레톤
+            if (results.rightHandLandmarks) {
+              drawConnectors(ctx, results.rightHandLandmarks, HAND_CONNECTIONS, { color: '#4ade80', lineWidth: 2.5 });
+              drawLandmarks(ctx, results.rightHandLandmarks, { color: '#22c55e', lineWidth: 1, radius: 3 });
+            }
+
+            // 3. 왼손 스켈레톤
+            if (results.leftHandLandmarks) {
+              drawConnectors(ctx, results.leftHandLandmarks, HAND_CONNECTIONS, { color: '#facc15', lineWidth: 2.5 });
+              drawLandmarks(ctx, results.leftHandLandmarks, { color: '#eab308', lineWidth: 1, radius: 3 });
+            }
+
+            ctx.restore();
+          });
+
+          cameraInstance = new Camera(videoElem, {
+            onFrame: async () => {
+              if (isHolisticRunning && videoElem) {
+                await holistic.send({ image: videoElem });
+              }
+            },
+            width: 640,
+            height: 480
+          });
+
+          await cameraInstance.start();
+          isHolisticRunning = true;
+          btn.innerText = "📷 동작 캠 끄기";
+          btn.style.background = "#ef4444";
+        } catch (err) {
+          console.error(err);
+          alert("카메라 실행 실패: 로컬 웹서버(VS Code Live Server 등) 환경에서 실행해주세요.");
+          btn.innerText = "📷 동작 캠";
+          btn.style.background = "#0f172a";
+          vp.style.display = 'none';
+          grid.classList.remove('dual-active');
+          isHolisticRunning = false;
+        }
+      } else {
+        if (cameraInstance) { await cameraInstance.stop(); cameraInstance = null; }
+        if (holistic) { holistic.close(); holistic = null; }
+        isHolisticRunning = false;
+        vp.style.display = 'none';
+        grid.classList.remove('dual-active');
+        btn.innerText = "📷 동작 캠";
+        btn.style.background = "#0f172a";
+      }
+    }
+
+    function changeImgSize(val) {
+      document.documentElement.style.setProperty('--img-scale', val);
+    }
+
+    function toggleMirrorMode() {
+      isMirrored = !isMirrored;
+      document.getElementById('btnMirror').classList.toggle('active', isMirrored);
+      applyVideoStyles();
+    }
+
+    function changeVideoSpeed(speed) {
+      currentVideoSpeed = parseFloat(speed) || 1.0;
+      applyVideoStyles();
+    }
+
+    // ★ 영상 재생/일시정지 토글 기능
+    function toggleVideoPlayPause() {
+      const vid = document.querySelector('#dictMediaTarget video');
+      const btn = document.getElementById('btnVideoPlayPause');
+      if (!vid) return;
+
+      if (vid.paused) {
+        vid.play();
+        isVideoPlaying = true;
+        btn.innerText = "⏸️ 정지";
+      } else {
+        vid.pause();
+        isVideoPlaying = false;
+        btn.innerText = "▶️ 재생";
+      }
+    }
+
+    // ★ 영상 반복 횟수 설정 기능
+    function changeVideoLoopCount(val) {
+      targetVideoLoopCount = parseInt(val) || 999;
+      currentVideoPlayCount = 0;
+      applyVideoStyles();
+    }
+
+    function applyVideoStyles() {
+      const vid = document.querySelector('#dictMediaTarget video');
+      const btn = document.getElementById('btnVideoPlayPause');
+      if (!vid) return;
+
+      vid.playbackRate = currentVideoSpeed;
+      if (isMirrored) vid.classList.add('mirrored');
+      else vid.classList.remove('mirrored');
+
+      // 반복 횟수 처리 이벤트 리스너 부착
+      vid.onended = () => {
+        currentVideoPlayCount++;
+        if (currentVideoPlayCount < targetVideoLoopCount) {
+          vid.play();
+        } else {
+          vid.pause();
+          isVideoPlaying = false;
+          if (btn) btn.innerText = "▶️ 재생";
+        }
+      };
+
+      if (targetVideoLoopCount >= 999) {
+        vid.loop = true;
+      } else {
+        vid.loop = false;
+      }
+
+      if (isVideoPlaying) {
+        vid.play().catch(() => {});
+        if (btn) btn.innerText = "⏸️ 정지";
+      } else {
+        vid.pause();
+        if (btn) btn.innerText = "▶️ 재생";
+      }
+    }
+
+    function getWordKey(id) { return `${currentCatKey}_${id}`; }
 
     function loadVoices() {
       if (!('speechSynthesis' in window)) return;
       ttsVoices = window.speechSynthesis.getVoices();
       const voiceSelect = document.getElementById('ttsVoiceSelect');
       if (!voiceSelect) return;
-
       const koreanVoices = ttsVoices.filter(v => v.lang.includes('ko') || v.lang.includes('KR'));
       voiceSelect.innerHTML = '';
-
       if (koreanVoices.length === 0) {
         const opt = document.createElement('option');
-        opt.value = '';
         opt.textContent = '기본 한국어 음성';
         voiceSelect.appendChild(opt);
         return;
       }
-
       koreanVoices.forEach((voice, index) => {
         const opt = document.createElement('option');
         opt.value = index;
-        
-        let genderTag = '🗣️ 일반';
-        const nameLower = voice.name.toLowerCase();
-        if (nameLower.includes('female') || nameLower.includes('heami') || nameLower.includes('sunhi') || nameLower.includes('yuna') || nameLower.includes('seoyeon') || nameLower.includes('여성')) {
-          genderTag = '👩 여성';
-        } else if (nameLower.includes('male') || nameLower.includes('jihoon') || nameLower.includes('minsu') || nameLower.includes('남성')) {
-          genderTag = '👨 남성';
-        }
-
-        opt.textContent = `${genderTag} (${voice.name})`;
-        if (index === 0) opt.selected = true;
+        opt.textContent = voice.name;
         voiceSelect.appendChild(opt);
       });
     }
@@ -735,104 +856,75 @@
       window.speechSynthesis.onvoiceschanged = loadVoices;
     }
 
-    // 단어 음성 출력 (속도 조절 값 반영)
+    // ★ 음성(TTS) 반복 재생 횟수 지원 함수
     function speakCurrentWord(onEndCallback) {
-      if (!('speechSynthesis' in window)) {
-        if (onEndCallback) onEndCallback();
-        return;
-      }
-      if (activeList.length === 0) {
+      if (!('speechSynthesis' in window) || activeList.length === 0) {
         if (onEndCallback) onEndCallback();
         return;
       }
 
       const current = activeList[currentIndex];
-      const cleanText = current.text.replace(/^\d+\s*/, '');
-      const firstWord = cleanText.split(',')[0].trim();
+      const firstWord = current.text.replace(/^\d+\s*/, '').split(',')[0].trim();
+      const repeatSelect = document.getElementById('ttsRepeatCountSelect');
+      const totalRepeats = repeatSelect ? parseInt(repeatSelect.value) : 1;
+      let currentRepeat = 0;
 
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(firstWord);
-      utterance.lang = 'ko-KR';
-
-      const rateSelect = document.getElementById('ttsRateSelect');
-      utterance.rate = rateSelect ? parseFloat(rateSelect.value) : 1.0;
-
-      const voiceSelect = document.getElementById('ttsVoiceSelect');
-      if (voiceSelect && voiceSelect.value !== '') {
-        const koreanVoices = ttsVoices.filter(v => v.lang.includes('ko') || v.lang.includes('KR'));
-        const selectedVoice = koreanVoices[voiceSelect.value];
-        if (selectedVoice) {
-          utterance.voice = selectedVoice;
-        }
-      }
-
       isSpeaking = true;
-      utterance.onend = () => {
-        isSpeaking = false;
-        if (onEndCallback) onEndCallback();
-      };
-      utterance.onerror = () => {
-        isSpeaking = false;
-        if (onEndCallback) onEndCallback();
-      };
 
-      window.speechSynthesis.speak(utterance);
-    }
+      function speakOnce() {
+        const utterance = new SpeechSynthesisUtterance(firstWord);
+        utterance.lang = 'ko-KR';
 
-    function initWelcomeMessage() {
-      const msgElem = document.getElementById('welcomeMessage');
-      if (msgElem) {
-        const randomIndex = Math.floor(Math.random() * WELCOME_MESSAGES.length);
-        msgElem.innerText = WELCOME_MESSAGES[randomIndex];
+        const rateSelect = document.getElementById('ttsRateSelect');
+        utterance.rate = rateSelect ? parseFloat(rateSelect.value) : 1.0;
+
+        const voiceSelect = document.getElementById('ttsVoiceSelect');
+        if (voiceSelect && voiceSelect.value !== '') {
+          const koreanVoices = ttsVoices.filter(v => v.lang.includes('ko') || v.lang.includes('KR'));
+          if (koreanVoices[voiceSelect.value]) utterance.voice = koreanVoices[voiceSelect.value];
+        }
+
+        utterance.onend = () => {
+          currentRepeat++;
+          if (currentRepeat < totalRepeats) {
+            setTimeout(speakOnce, 250); // 반복 간 0.25초 휴지기
+          } else {
+            isSpeaking = false;
+            if (onEndCallback) onEndCallback();
+          }
+        };
+
+        utterance.onerror = () => {
+          isSpeaking = false;
+          if (onEndCallback) onEndCallback();
+        };
+
+        window.speechSynthesis.speak(utterance);
       }
-    }
 
-    function selectInitialStudyType(type) {
-      studyType = type;
-      const btnTest = document.getElementById('btnChoiceTest');
-      const btnVocab = document.getElementById('btnChoiceVocab');
-      if (type === 'TEST') {
-        btnTest.classList.add('active');
-        btnVocab.classList.remove('active');
-      } else {
-        btnTest.classList.remove('active');
-        btnVocab.classList.add('active');
-      }
+      speakOnce();
     }
 
     function enterStudyRoom() {
-      const overlay = document.getElementById('welcomeOverlay');
-      if (overlay) {
-        overlay.style.display = 'none';
-      }
+      document.getElementById('welcomeOverlay').style.display = 'none';
       loadVoices();
       setStudyType(studyType);
     }
 
+    function selectInitialStudyType(type) {
+      studyType = type;
+      document.getElementById('btnChoiceTest').classList.toggle('active', type==='TEST');
+      document.getElementById('btnChoiceVocab').classList.toggle('active', type==='VOCAB');
+    }
+
     function setStudyType(type) {
       studyType = type;
-      const btnTest = document.getElementById('btnSwitchTest');
-      const btnVocab = document.getElementById('btnSwitchVocab');
-      const badge = document.getElementById('studyTypeBadge');
-      const btnRev = document.getElementById('btnReveal');
-      const timerRevealBox = document.getElementById('revealTimerBox');
-
-      if (studyType === 'TEST') {
-        btnTest.className = 'btn-type-toggle active';
-        btnVocab.className = 'btn-type-toggle';
-        badge.innerText = '📝 시험 모드';
-        badge.className = 'mode-badge';
-        btnRev.style.display = 'inline-block';
-        if (timerRevealBox) timerRevealBox.style.display = 'flex';
-      } else {
-        btnTest.className = 'btn-type-toggle';
-        btnVocab.className = 'btn-type-toggle active';
-        badge.innerText = '📖 단어장 모드 (정답 상시 공개)';
-        badge.className = 'mode-badge vocab';
-        btnRev.style.display = 'none';
-        if (timerRevealBox) timerRevealBox.style.display = 'none';
-      }
-
+      document.getElementById('btnSwitchTest').className = `btn-type-toggle ${type==='TEST'?'active':''}`;
+      document.getElementById('btnSwitchVocab').className = `btn-type-toggle ${type==='VOCAB'?'active':''}`;
+      document.getElementById('studyTypeBadge').innerText = type==='TEST' ? '📝 시험 모드' : '📖 단어장 모드';
+      document.getElementById('btnReveal').style.display = type==='TEST' ? 'inline-block' : 'none';
+      document.getElementById('revealTimerBox').style.display = type==='TEST' ? 'flex' : 'none';
       updateCard();
     }
 
@@ -840,131 +932,59 @@
       const resizer = document.getElementById('dragResizer');
       const sidebar = document.querySelector('.sidebar');
       if (!resizer || !sidebar) return;
-
-      let startY = 0;
-      let startHeight = 0;
-      let isDragging = false;
-
-      function onStart(clientY) {
-        if (window.innerWidth > 768) return;
-        isDragging = true;
-        startY = clientY;
-        startHeight = sidebar.getBoundingClientRect().height;
-        resizer.classList.add('dragging');
-        document.body.style.userSelect = 'none';
-      }
-
-      function onMove(clientY) {
-        if (!isDragging) return;
-        const deltaY = clientY - startY;
-        let newHeight = startHeight + deltaY;
-        const minH = 140;
-        const maxH = window.innerHeight * 0.75;
-        newHeight = Math.max(minH, Math.min(newHeight, maxH));
-        sidebar.style.height = `${newHeight}px`;
-      }
-
-      function onEnd() {
-        if (!isDragging) return;
-        isDragging = false;
-        resizer.classList.remove('dragging');
-        document.body.style.userSelect = '';
-      }
-
-      resizer.addEventListener('mousedown', (e) => {
-        onStart(e.clientY);
-        const onMouseMove = (ev) => onMove(ev.clientY);
-        const onMouseUp = () => {
-          onEnd();
-          window.removeEventListener('mousemove', onMouseMove);
-          window.removeEventListener('mouseup', onMouseUp);
-        };
-        window.addEventListener('mousemove', onMouseMove);
-        window.addEventListener('mouseup', onMouseUp);
-      });
-
+      let startY = 0, startH = 0, isDrag = false;
       resizer.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) onStart(e.touches[0].clientY);
+        if (e.touches.length === 1) {
+          isDrag = true;
+          startY = e.touches[0].clientY;
+          startH = sidebar.getBoundingClientRect().height;
+        }
       }, { passive: true });
-
       window.addEventListener('touchmove', (e) => {
-        if (isDragging && e.touches.length === 1) onMove(e.touches[0].clientY);
+        if (isDrag && e.touches.length === 1) {
+          let newH = startH + (e.touches[0].clientY - startY);
+          sidebar.style.height = `${Math.max(140, Math.min(newH, window.innerHeight * 0.75))}px`;
+        }
       }, { passive: true });
-
-      window.addEventListener('touchend', onEnd);
-      window.addEventListener('touchcancel', onEnd);
+      window.addEventListener('touchend', () => { isDrag = false; });
     }
 
     function initCategorySelector() {
       const select = document.getElementById('catSelect');
       select.innerHTML = '';
-      let firstAvailableKey = null;
-
-      // CATEGORY_ORDER에 있는 키 우선 + sign_data.js에 정의된 나머지 모든 키 자동 포함
-      const baseOrder = (typeof CATEGORY_ORDER !== 'undefined') ? CATEGORY_ORDER : [];
+      const baseOrder = CATEGORY_ORDER || [];
       const allKeys = Object.keys(CATEGORIES);
       const orderList = [...new Set([...baseOrder.filter(k => k in CATEGORIES), ...allKeys])];
-
       orderList.forEach(key => {
         const cat = CATEGORIES[key];
         if (!cat || cat.hidden) return;
-
         const opt = document.createElement('option');
         opt.value = key;
         opt.textContent = cat.title;
-
-        if (cat.disabled) {
-          opt.disabled = true;
-          opt.textContent += " (비활성화)";
-        } else if (!firstAvailableKey) {
-          firstAvailableKey = key;
-        }
-
         select.appendChild(opt);
       });
-
-      if (!CATEGORIES[currentCatKey] || CATEGORIES[currentCatKey].hidden || CATEGORIES[currentCatKey].disabled) {
-        currentCatKey = firstAvailableKey || orderList[0];
-      }
+      currentCatKey = orderList[0];
       select.value = currentCatKey;
     }
 
-    function changeCategory(catKey) {
+    function changeCategory(key) {
       clearAllTimers();
-      currentCatKey = catKey;
+      currentCatKey = key;
       loadCategoryData();
     }
 
     function loadCategoryData() {
       const cat = CATEGORIES[currentCatKey] || { rawData: [] };
       wordList = (cat.rawData || []).map(item => {
-        const match = item.match(/^(\d+)\s*(.*)/);
-        return match ? { id: parseInt(match[1]), text: match[2] } : { id: 0, text: item };
+        const m = item.match(/^(\d+)\s*(.*)/);
+        return m ? { id: parseInt(m[1]), text: m[2] } : { id: 0, text: item };
       });
-      
       fullActiveList = [...wordList];
       if (isShuffled) shuffleArray(fullActiveList);
       activeList = [...fullActiveList];
       currentIndex = 0;
-      savedFullIndex = 0;
-      currentMode = 'FULL';
-      selectedWords.clear();
-      hiddenWords.clear();
-      isGlobalHidden = false;
-      const ghc = document.getElementById('globalHideCheck');
-      if (ghc) ghc.checked = false;
-      
-      updateOrderButtonUI();
       renderSidebar();
       updateCard();
-    }
-
-    function init() {
-      initWelcomeMessage();
-      initCategorySelector();
-      loadCategoryData();
-      initMobileResizer();
-      loadVoices();
     }
 
     function shuffleArray(arr) {
@@ -975,7 +995,6 @@
     }
 
     function shuffleCurrentList() {
-      if (activeList.length === 0) return;
       clearAllTimers();
       shuffleArray(activeList);
       currentIndex = 0;
@@ -986,7 +1005,6 @@
     }
 
     function sortCurrentListNumeric() {
-      if (activeList.length === 0) return;
       clearAllTimers();
       activeList.sort((a, b) => a.id - b.id);
       currentIndex = 0;
@@ -997,33 +1015,18 @@
     }
 
     function updateOrderButtonUI() {
-      const btnShuf = document.getElementById('btnShuffle');
-      const btnNum = document.getElementById('btnNumeric');
-      if (btnShuf && btnNum) {
-        if (isShuffled) {
-          btnShuf.className = 'btn-order-toggle active';
-          btnNum.className = 'btn-order-toggle';
-        } else {
-          btnShuf.className = 'btn-order-toggle';
-          btnNum.className = 'btn-order-toggle active';
-        }
-      }
+      document.getElementById('btnShuffle').className = `btn-order-toggle ${isShuffled ? 'active' : ''}`;
+      document.getElementById('btnNumeric').className = `btn-order-toggle ${!isShuffled ? 'active' : ''}`;
     }
 
-    let revealTimerId = null;
-    let nextTimerId = null;
-    let revealTimeLeft = 0;
-    let nextTimeLeft = 0;
+    let revealTimerId = null, nextTimerId = null, revealTimeLeft = 0, nextTimeLeft = 0;
 
     function clearAllTimers() {
       if (revealTimerId) clearInterval(revealTimerId);
       if (nextTimerId) clearInterval(nextTimerId);
-      revealTimerId = null;
-      nextTimerId = null;
-      const rCd = document.getElementById('revealCountdown');
-      const nCd = document.getElementById('nextCountdown');
-      if (rCd) rCd.innerText = '-';
-      if (nCd) nCd.innerText = '-';
+      revealTimerId = null; nextTimerId = null;
+      document.getElementById('revealCountdown').innerText = '-';
+      document.getElementById('nextCountdown').innerText = '-';
     }
 
     function initTimers() {
@@ -1031,210 +1034,62 @@
       if (activeList.length === 0 || isSpeaking) return;
       const useReveal = document.getElementById('useRevealTimer').checked;
       const useNext = document.getElementById('useNextTimer').checked;
-      const rCd = document.getElementById('revealCountdown');
-      const nCd = document.getElementById('nextCountdown');
 
       if (studyType === 'VOCAB') {
         if (useNext) startNextCountdown();
         return;
       }
 
-      if (!isRevealed) {
-        if (useReveal) {
-          revealTimeLeft = parseInt(document.getElementById('revealSecs').value) || 3;
-          rCd.innerText = `${revealTimeLeft}초`;
-          revealTimerId = setInterval(() => {
-            revealTimeLeft--;
-            if (revealTimeLeft > 0) {
-              rCd.innerText = `${revealTimeLeft}초`;
-            } else {
-              clearInterval(revealTimerId);
-              revealTimerId = null;
-              rCd.innerText = '열림';
-              toggleAnswer(true);
-            }
-          }, 1000);
-        }
-
-        if (!useReveal && useNext) {
-          startNextCountdown();
-        }
-      } else {
-        if (rCd) rCd.innerText = '열림';
-        if (useNext) {
-          startNextCountdown();
-        }
+      if (!isRevealed && useReveal) {
+        revealTimeLeft = parseInt(document.getElementById('revealSecs').value) || 3;
+        document.getElementById('revealCountdown').innerText = `${revealTimeLeft}초`;
+        revealTimerId = setInterval(() => {
+          revealTimeLeft--;
+          if (revealTimeLeft > 0) {
+            document.getElementById('revealCountdown').innerText = `${revealTimeLeft}초`;
+          } else {
+            clearInterval(revealTimerId);
+            revealTimerId = null;
+            document.getElementById('revealCountdown').innerText = '열림';
+            toggleAnswer(true);
+          }
+        }, 1000);
+      } else if (isRevealed && useNext) {
+        startNextCountdown();
       }
     }
 
     function startNextCountdown() {
       if (nextTimerId) clearInterval(nextTimerId);
-      const nCd = document.getElementById('nextCountdown');
       nextTimeLeft = parseInt(document.getElementById('nextSecs').value) || 2;
-      nCd.innerText = `${nextTimeLeft}초`;
-
+      document.getElementById('nextCountdown').innerText = `${nextTimeLeft}초`;
       nextTimerId = setInterval(() => {
         if (isSpeaking) return;
-
         nextTimeLeft--;
         if (nextTimeLeft > 0) {
-          nCd.innerText = `${nextTimeLeft}초`;
+          document.getElementById('nextCountdown').innerText = `${nextTimeLeft}초`;
         } else {
           clearInterval(nextTimerId);
           nextTimerId = null;
-          nCd.innerText = '-';
-          if (currentIndex < activeList.length - 1) {
-            nextWord();
-          } else {
-            alert("🎉 마지막 단어입니다! 해당 과의 학습이 완료되었습니다.");
-          }
+          document.getElementById('nextCountdown').innerText = '-';
+          if (currentIndex < activeList.length - 1) nextWord();
         }
       }, 1000);
-    }
-
-    function updateSidebarBadge(id) {
-      const itemElem = document.getElementById(`side-item-${id}`);
-      if (itemElem) {
-        const badge = itemElem.querySelector('.sidebar-badge');
-        if (badge) {
-          const st = statusMap[getWordKey(id)] || 'none';
-          const badgeLabel = st === 'known' ? '완료' : st === 'unknown' ? '모름' : st === 'review' ? '재확인' : '미체크';
-          badge.className = `sidebar-badge badge-${st}`;
-          badge.innerText = badgeLabel;
-        }
-      }
-    }
-
-    function cycleStatus(id, event) {
-      if (event) event.stopPropagation();
-      const key = getWordKey(id);
-      const currentStatus = statusMap[key] || 'none';
-      let nextStatus = 'known';
-      if (currentStatus === 'known') nextStatus = 'unknown';
-      else if (currentStatus === 'unknown') nextStatus = 'review';
-      else if (currentStatus === 'review') nextStatus = 'none';
-
-      if (nextStatus === 'none') delete statusMap[key];
-      else statusMap[key] = nextStatus;
-
-      updateSidebarBadge(id);
-      updateStats();
-
-      if (activeList[currentIndex]?.id === id) {
-        const tagElem = document.getElementById('statusTag');
-        tagElem.className = `status-tag tag-${nextStatus}`;
-        tagElem.innerText = nextStatus === 'known' ? '아는 문제' : nextStatus === 'unknown' ? '모르는 문제' : nextStatus === 'review' ? '재확인' : '';
-      }
-    }
-
-    function toggleGlobalHide(state) {
-      isGlobalHidden = state;
-      if (isGlobalHidden) {
-        wordList.forEach(w => hiddenWords.add(w.id));
-      } else {
-        hiddenWords.clear();
-      }
-      renderSidebar();
-    }
-
-    function toggleHideWord(id, event) {
-      if (event) event.stopPropagation();
-      if (hiddenWords.has(id)) hiddenWords.delete(id);
-      else hiddenWords.add(id);
-      renderSidebar();
-    }
-
-    function selectAllFiltered() {
-      const query = (document.getElementById('searchInput')?.value || '').toLowerCase();
-      wordList.forEach(w => {
-        if (!query || w.text.toLowerCase().includes(query)) selectedWords.add(w.id);
-      });
-      renderSidebar();
-    }
-
-    function deselectAllFiltered() {
-      const query = (document.getElementById('searchInput')?.value || '').toLowerCase();
-      wordList.forEach(w => {
-        if (!query || w.text.toLowerCase().includes(query)) selectedWords.delete(w.id);
-      });
-      renderSidebar();
-    }
-
-    function handleMouseDown(e, id) {
-      if (e.target.tagName === 'BUTTON' || e.target.classList.contains('sidebar-badge')) return;
-      const cb = document.getElementById(`cb-${id}`);
-      isSelectingDrag = !cb.checked;
-      cb.checked = isSelectingDrag;
-      updateSet(id, isSelectingDrag);
-    }
-
-    function handleMouseEnter(e, id) {
-      if (e.buttons === 1 && isSelectingDrag !== null) { 
-        const cb = document.getElementById(`cb-${id}`);
-        cb.checked = isSelectingDrag;
-        updateSet(id, isSelectingDrag);
-      }
-    }
-
-    function updateSet(id, state) {
-      if(state) selectedWords.add(id);
-      else selectedWords.delete(id);
-    }
-
-    window.addEventListener('mouseup', () => { isSelectingDrag = null; });
-
-    function jumpToWord(id) {
-      if (isSpeaking) return;
-      clearAllTimers();
-      const idx = activeList.findIndex(w => w.id === id);
-      if (idx !== -1) {
-        currentIndex = idx;
-        updateCard();
-      } else {
-        if(confirm("현재 학습 목록에 없는 단어입니다. 전체 모드로 전환하여 해당 단어로 이동할까요?")) {
-           returnToFullMode();
-           const fullIdx = activeList.findIndex(w => w.id === id);
-           if(fullIdx !== -1) {
-             currentIndex = fullIdx;
-             updateCard();
-           }
-        }
-      }
-    }
-
-    function studySelected() {
-      if (isSpeaking) return;
-      if (selectedWords.size === 0) {
-        alert("선택된 단어가 없습니다. 단어를 체크해주세요.");
-        return;
-      }
-      clearAllTimers();
-      if (currentMode === 'FULL') savedFullIndex = currentIndex; 
-      
-      currentMode = 'CUSTOM';
-      activeList = wordList.filter(w => selectedWords.has(w.id));
-      if (isShuffled) shuffleArray(activeList);
-      currentIndex = 0;
-      updateCard();
     }
 
     function markCurrent(type) {
       if (activeList.length === 0 || isSpeaking) return;
       const current = activeList[currentIndex];
       statusMap[getWordKey(current.id)] = type;
-
-      const tagElem = document.getElementById('statusTag');
-      tagElem.className = `status-tag tag-${type}`;
-      tagElem.innerText = type === 'known' ? '아는 문제' : type === 'unknown' ? '모르는 문제' : type === 'review' ? '재확인' : '';
-
-      updateSidebarBadge(current.id);
       updateStats();
+      renderSidebar();
       nextWord();
     }
 
     function nextWord() {
       if (isSpeaking) return;
       clearAllTimers();
+      currentVideoPlayCount = 0;
       if (currentIndex < activeList.length - 1) {
         currentIndex++;
         updateCard();
@@ -1244,6 +1099,7 @@
     function prevWord() {
       if (isSpeaking) return;
       clearAllTimers();
+      currentVideoPlayCount = 0;
       if (currentIndex > 0) {
         currentIndex--;
         updateCard();
@@ -1259,203 +1115,74 @@
         else if (st === 'review') review++;
         else unchecked++;
       });
-
       document.getElementById('cntKnown').innerText = known;
       document.getElementById('cntUnknown').innerText = unknown;
       document.getElementById('cntReview').innerText = review;
       document.getElementById('sideUncheckedCnt').innerText = unchecked;
-
       document.getElementById('mTotal').innerText = wordList.length;
       document.getElementById('mChecked').innerText = wordList.length - unchecked;
       document.getElementById('mKnown').innerText = known;
       document.getElementById('mUnknown').innerText = unknown;
-      document.getElementById('mReview').innerText = review;
-      document.getElementById('mUnchecked').innerText = unchecked;
-
-      const uncheckedList = wordList.filter(w => !statusMap[getWordKey(w.id)]).map(w => w.id + '번(' + w.text.split(',')[0] + ')');
-      document.getElementById('mUncheckedList').innerText = uncheckedList.length ? uncheckedList.join(', ') : '없음 (전부 체크 완료)';
-    }
-
-    function startLearning() {
-      if (isSpeaking) return;
-      if (wordList.length === 0) {
-        alert("현재 카테고리에 등록된 단어가 없습니다.");
-        return;
-      }
-      if (confirm("새로운 셔플로 전체 학습을 시작하시겠습니까? (기존 채점 상태는 유지됩니다)")) {
-        clearAllTimers();
-        fullActiveList = [...wordList];
-        shuffleArray(fullActiveList);
-        activeList = [...fullActiveList];
-        currentIndex = 0;
-        savedFullIndex = 0;
-        currentMode = 'FULL';
-        isShuffled = true;
-        updateOrderButtonUI();
-        updateCard();
-        renderSidebar();
-      }
-    }
-
-    function startReviewMode() {
-      if (isSpeaking) return;
-      const targets = wordList.filter(w => {
-        const st = statusMap[getWordKey(w.id)];
-        return st === 'unknown' || st === 'review';
-      });
-      if (targets.length === 0) {
-        alert("모르는 문제나 재확인할 문제가 없습니다.");
-        return;
-      }
-      clearAllTimers();
-      if (currentMode === 'FULL') savedFullIndex = currentIndex; 
-      
-      currentMode = 'REVIEW';
-      activeList = [...targets];
-      if (isShuffled) shuffleArray(activeList);
-      currentIndex = 0;
-      updateCard();
-    }
-
-    function returnToFullMode() {
-      if (isSpeaking) return;
-      clearAllTimers();
-      currentMode = 'FULL';
-      activeList = [...fullActiveList];
-      currentIndex = Math.min(savedFullIndex, activeList.length - 1);
-      updateCard();
-    }
-
-    function getWordDetailHtml(current) {
-      const cat = CATEGORIES[currentCatKey] || {};
-      const descText = cat.descriptions ? cat.descriptions[current.id] : null;
-      const combText = cat.combinations ? cat.combinations[current.id] : null;
-      const imgs = cat.imageMap ? cat.imageMap[current.id] : null;
-      const vids = cat.videoMap ? cat.videoMap[current.id] : null;
-      const linkUrl = cat.urls ? cat.urls[current.id] : null;
-
-      let imgHtml = '';
-      if (imgs && imgs.length > 0) {
-        const imgBoxes = imgs.map(src => `<div class="img-box"><img src="${src}" alt="수어 사진"></div>`).join('');
-        imgHtml = `<div class="img-container">${imgBoxes}</div>`;
-      }
-
-      let vidHtml = '';
-      if (vids && vids.length > 0) {
-        const vidBoxes = vids.map(src => `
-          <div class="img-box" style="background:#000;">
-            <video src="${src}" autoplay loop muted playsinline controls></video>
-          </div>
-        `).join('');
-        vidHtml = `<div class="img-container">${vidBoxes}</div>`;
-      }
-
-      let infoHtml = '';
-      if (descText) {
-        infoHtml += `<div class="desc-text">📖 <b>동작 설명:</b> ${descText}</div>`;
-      }
-      
-      if (combText) {
-        infoHtml += `<div class="desc-text" style="background: #eef2ff; border-color: #c7d2fe; color: #3730a3; margin-top: 5px;">🔗 <b>단어 결합:</b> ${combText}</div>`;
-      }
-
-      let linkHtml = '';
-      if (linkUrl) {
-        linkHtml = `
-          <div class="dict-link-wrap">
-            <a href="${linkUrl}" target="_blank" rel="noopener noreferrer" class="dict-link-btn">
-              🌐 국립국어원 사전 상세페이지 보기 ↗
-            </a>
-          </div>
-        `;
-      }
-
-      return `
-        <div class="answer-container">
-          ${infoHtml}
-          ${vidHtml}
-          ${imgHtml}
-          ${linkHtml}
-        </div>
-      `;
+      const uncheckedList = wordList.filter(w => !statusMap[getWordKey(w.id)]).map(w => `${w.id}번`);
+      document.getElementById('mUncheckedList').innerText = uncheckedList.length ? uncheckedList.join(', ') : '전부 완료';
     }
 
     function updateCard() {
-      const cat = CATEGORIES[currentCatKey] || { title: "과목 선택" };
-      const modeBadge = document.getElementById('modeName');
-      const btnFullMode = document.getElementById('btnFullMode');
-      const btnReviewMode = document.getElementById('btnReviewMode');
-      const wordBox = document.getElementById('display');
-
-      if (activeList.length === 0) {
-        wordBox.innerHTML = `
-          <div id="statusTag"></div>
-          <div id="wordContent" style="color: #64748b; font-size: 1.1rem; line-height: 1.6;">
-            📂 <b>${cat.title}</b><br>
-            등록된 단어가 없습니다.<br>
-            <code>sign_data.js</code> 파일 내 해당 카테고리에 단어 데이터를 추가해주세요.
-          </div>
-        `;
-        document.getElementById('progress').innerText = "단어 0 / 0";
-        modeBadge.innerText = `${cat.title} | 비어있음`;
-        btnFullMode.style.display = 'none';
-        btnReviewMode.style.display = 'none';
-        updateStats();
-        return;
-      }
-
+      const cat = CATEGORIES[currentCatKey] || {};
       const current = activeList[currentIndex];
-      const status = statusMap[getWordKey(current.id)] || 'none';
+      if (!current) return;
 
-      if (currentMode === 'REVIEW') {
-        modeBadge.innerText = `${cat.title} | 오답노트 복습 모드`;
-        modeBadge.className = "mode-badge review";
-        btnFullMode.style.display = 'block';
-        btnReviewMode.style.display = 'none';
-      } else if (currentMode === 'CUSTOM') {
-        modeBadge.innerText = `${cat.title} | ✨ 맞춤 선택 학습`;
-        modeBadge.className = "mode-badge custom";
-        btnFullMode.style.display = 'block';
-        btnReviewMode.style.display = 'block';
-      } else {
-        modeBadge.innerText = `${cat.title} | 전체 학습 모드`;
-        modeBadge.className = "mode-badge";
-        btnFullMode.style.display = 'none';
-        btnReviewMode.style.display = 'block';
-      }
+      const id = current.id;
+      const strId = String(id);
+      const status = statusMap[getWordKey(id)] || 'none';
 
       document.getElementById('progress').innerText = `단어 ${currentIndex + 1} / ${activeList.length}`;
+      
+      // 최상단 배너 갱신
+      document.getElementById('topWordTitle').innerText = `${id}. ${current.text}`;
+      document.getElementById('topStatusTag').innerHTML = `<span class="status-tag tag-${status}" style="position:static;">${status === 'known' ? '아는 문제' : status === 'unknown' ? '모르는 문제' : status === 'review' ? '재확인' : '미체크'}</span>`;
 
-      const statusTagHtml = `
-        <div id="statusTag" class="status-tag tag-${status}">
-          ${status === 'known' ? '아는 문제' : status === 'unknown' ? '모르는 문제' : status === 'review' ? '재확인' : ''}
-        </div>
-      `;
+      // 사전 영상 주입
+      const dictMediaTarget = document.getElementById('dictMediaTarget');
+      let rawVids = cat.videoMap ? (cat.videoMap[id] || cat.videoMap[strId]) : null;
+      let vidSrc = null;
+      if (rawVids) {
+        vidSrc = Array.isArray(rawVids) ? rawVids[0] : rawVids;
+        vidSrc = vidSrc.replace(/^http:\/\//i, 'https://');
+      }
 
-      if (studyType === 'VOCAB') {
-        isRevealed = true;
-        wordBox.innerHTML = `
-          ${statusTagHtml}
-          <div id="wordContent">
-            <div style="font-size:1.4rem;">${current.id}. ${current.text}</div>
-            ${getWordDetailHtml(current)}
-          </div>
-        `;
+      const detailContent = document.getElementById('detailContent');
+
+      if (studyType === 'TEST' && !isRevealed) {
+        dictMediaTarget.innerHTML = `<div style="color:#94a3b8; font-size:1.15rem; font-weight:bold;">🎬 [정답 확인]을 누르면 표준 수어 영상이 재생됩니다.</div>`;
+        detailContent.innerHTML = `<div style="color:#64748b; font-size:1rem; font-weight:600;">[Space] 또는 [정답] 버튼을 누르면 상세 설명과 지문자 힌트가 열립니다.</div>`;
       } else {
-        isRevealed = false;
-        wordBox.innerHTML = `
-          ${statusTagHtml}
-          <div id="wordContent">
-            <div style="font-size:1.4rem;">${current.id}. ${current.text}</div>
+        if (vidSrc) {
+          dictMediaTarget.innerHTML = `<video src="${vidSrc}" autoplay loop muted playsinline></video>`;
+          currentVideoPlayCount = 0;
+          applyVideoStyles();
+        } else {
+          dictMediaTarget.innerHTML = `<div style="color:#ef4444; font-weight:bold;">등록된 표준 수어 영상이 없습니다.</div>`;
+        }
+
+        const descText = cat.descriptions ? (cat.descriptions[id] || cat.descriptions[strId]) : '';
+        const combText = cat.combinations ? (cat.combinations[id] || cat.combinations[strId]) : '';
+        const linkUrl = cat.urls ? (cat.urls[id] || cat.urls[strId]) : '';
+        const fsHtml = getFingerspellHtml(current.text);
+
+        detailContent.innerHTML = `
+          <div class="answer-container">
+            ${descText ? `<div class="desc-text">📖 <b>동작 설명:</b> ${descText}</div>` : ''}
+            ${combText ? `<div class="desc-text" style="background:#eef2ff; color:#3730a3;">🔗 <b>단어 결합:</b> ${combText}</div>` : ''}
+            ${fsHtml}
+            ${linkUrl ? `<div class="dict-link-wrap"><a href="${linkUrl}" target="_blank" rel="noopener noreferrer" class="dict-link-btn">🌐 국립국어원 사전 상세페이지 보기 ↗</a></div>` : ''}
           </div>
         `;
       }
 
       const autoPlayCheck = document.getElementById('autoPlayTts');
       if (autoPlayCheck && autoPlayCheck.checked) {
-        speakCurrentWord(() => {
-          initTimers();
-        });
+        speakCurrentWord(() => { initTimers(); });
       } else {
         initTimers();
       }
@@ -1466,41 +1193,45 @@
 
     function toggleAnswer(isAuto = false) {
       if (activeList.length === 0 || studyType === 'VOCAB' || isSpeaking) return;
-      const current = activeList[currentIndex];
-      const wordContent = document.getElementById('wordContent');
       isRevealed = isAuto ? true : !isRevealed;
+      updateCard();
+    }
 
-      if (isRevealed) {
-        if (revealTimerId) clearInterval(revealTimerId);
-        const rCd = document.getElementById('revealCountdown');
-        if (rCd) rCd.innerText = '열림';
+    // ★ 단어 목록 체크박스 드래그 다중 선택 이벤트 로직 복원
+    function handleMouseDown(e, id) {
+      if (e.target.tagName === 'BUTTON' || e.target.classList.contains('sidebar-badge')) return;
+      const cb = document.getElementById(`cb-${id}`);
+      isSelectingDrag = !cb.checked;
+      cb.checked = isSelectingDrag;
+      updateSet(id, isSelectingDrag);
+    }
 
-        wordContent.innerHTML = `
-          <div style="font-size:1.4rem;">${current.id}. ${current.text}</div>
-          ${getWordDetailHtml(current)}
-        `;
-
-        const useNext = document.getElementById('useNextTimer').checked;
-        if (useNext) {
-          startNextCountdown();
+    function handleMouseEnter(e, id) {
+      if (e.buttons === 1 && isSelectingDrag !== null) { 
+        const cb = document.getElementById(`cb-${id}`);
+        if (cb) {
+          cb.checked = isSelectingDrag;
+          updateSet(id, isSelectingDrag);
         }
-      } else {
-        wordContent.innerHTML = `<div style="font-size:1.4rem;">${current.id}. ${current.text}</div>`;
-        initTimers();
       }
     }
+
+    function updateSet(id, state) {
+      if (state) selectedWords.add(id);
+      else selectedWords.delete(id);
+    }
+
+    window.addEventListener('mouseup', () => { isSelectingDrag = null; });
 
     function renderSidebar() {
       const sidebarList = document.getElementById('sidebarList');
       sidebarList.innerHTML = '';
       const query = (document.getElementById('searchInput')?.value || '').toLowerCase();
       const orderType = document.getElementById('sidebarOrder')?.value || 'study';
-
       let displayList = (orderType === 'study') ? [...activeList] : [...wordList];
 
       displayList.forEach((item) => {
         if (query && !item.text.toLowerCase().includes(query)) return;
-        
         const div = document.createElement('div');
         const isActive = activeList.length > 0 && activeList[currentIndex]?.id === item.id;
         div.className = `sidebar-item ${isActive ? 'active' : ''}`;
@@ -1508,101 +1239,133 @@
 
         const st = statusMap[getWordKey(item.id)] || 'none';
         const badgeLabel = st === 'known' ? '완료' : st === 'unknown' ? '모름' : st === 'review' ? '재확인' : '미체크';
-
         const isHidden = hiddenWords.has(item.id);
         const isChecked = selectedWords.has(item.id) ? 'checked' : '';
 
         div.innerHTML = `
           <div class="checkbox-wrap" onmousedown="handleMouseDown(event, ${item.id})" onmouseenter="handleMouseEnter(event, ${item.id})">
-            <input type="checkbox" id="cb-${item.id}" ${isChecked} style="pointer-events: none;">
+            <input type="checkbox" id="cb-${item.id}" ${isChecked} style="pointer-events:none;">
           </div>
           <div class="word-text ${isHidden ? 'blurred' : ''}" onclick="jumpToWord(${item.id})">
             ${item.id}. ${item.text.split(',')[0]}
           </div>
-          <button class="eye-btn" onclick="toggleHideWord(${item.id}, event)">
-            ${isHidden ? '🙈' : '👁️'}
-          </button>
-          <span class="sidebar-badge badge-${st}" title="클릭하여 상태 변경" onclick="cycleStatus(${item.id}, event)">${badgeLabel}</span>
+          <button class="eye-btn" onclick="toggleHideWord(${item.id}, event)">${isHidden ? '🙈' : '👁️'}</button>
+          <span class="sidebar-badge badge-${st}">${badgeLabel}</span>
         `;
         sidebarList.appendChild(div);
       });
     }
 
-    function updateSidebarActive() {
-      const activeItem = activeList[currentIndex];
-      if (!activeItem) return;
-      
-      document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
-      const activeElem = document.getElementById(`side-item-${activeItem.id}`);
-      
-      if (activeElem) {
-        activeElem.classList.add('active');
-
-        if (window.innerWidth > 768) {
-          const listContainer = document.getElementById('sidebarList');
-          if (listContainer) {
-            const itemOffsetTop = activeElem.offsetTop - listContainer.offsetTop;
-            if (itemOffsetTop < listContainer.scrollTop) {
-              listContainer.scrollTop = itemOffsetTop;
-            } else if (itemOffsetTop + activeElem.clientHeight > listContainer.scrollTop + listContainer.clientHeight) {
-              listContainer.scrollTop = itemOffsetTop + activeElem.clientHeight - listContainer.clientHeight;
-            }
-          }
-        }
+    function jumpToWord(id) {
+      clearAllTimers();
+      currentVideoPlayCount = 0;
+      const idx = activeList.findIndex(w => w.id === id);
+      if (idx !== -1) {
+        currentIndex = idx;
+        isRevealed = false;
+        updateCard();
       }
     }
 
+    function updateSidebarActive() {
+      const activeItem = activeList[currentIndex];
+      if (!activeItem) return;
+      document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+      const activeElem = document.getElementById(`side-item-${activeItem.id}`);
+      if (activeElem) activeElem.classList.add('active');
+    }
+
+    function selectAllFiltered() {
+      wordList.forEach(w => selectedWords.add(w.id));
+      renderSidebar();
+    }
+    function deselectAllFiltered() {
+      selectedWords.clear();
+      renderSidebar();
+    }
+    function studySelected() {
+      if (selectedWords.size === 0) { alert("선택된 단어가 없습니다."); return; }
+      clearAllTimers();
+      currentMode = 'CUSTOM';
+      activeList = wordList.filter(w => selectedWords.has(w.id));
+      if (isShuffled) shuffleArray(activeList);
+      currentIndex = 0;
+      updateCard();
+    }
+
+    function toggleGlobalHide(val) {
+      if (val) wordList.forEach(w => hiddenWords.add(w.id));
+      else hiddenWords.clear();
+      renderSidebar();
+    }
+
+    function toggleHideWord(id, e) {
+      e.stopPropagation();
+      if (hiddenWords.has(id)) hiddenWords.delete(id);
+      else hiddenWords.add(id);
+      renderSidebar();
+    }
+
     function resetAll() {
-      if (isSpeaking) return;
-      const catTitle = CATEGORIES[currentCatKey]?.title || "현재 과";
-      if (confirm(`[${catTitle}]의 모든 채점 상태를 초기화하고 셔플하시겠습니까?`)) {
+      if (confirm("모든 채점 상태를 초기화할까요?")) {
         clearAllTimers();
-        wordList.forEach(w => {
-          delete statusMap[getWordKey(w.id)];
-        });
+        wordList.forEach(w => delete statusMap[getWordKey(w.id)]);
         loadCategoryData();
       }
     }
 
     function togglePauseModal() {
-      const modal = document.getElementById('pauseModal');
-      modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+      const m = document.getElementById('pauseModal');
+      m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
     }
 
-    function changeImgSize(val) {
-      document.documentElement.style.setProperty('--img-scale', val);
+    function startLearning() {
+      clearAllTimers();
+      fullActiveList = [...wordList];
+      shuffleArray(fullActiveList);
+      activeList = [...fullActiveList];
+      currentIndex = 0;
+      updateCard();
     }
 
-    document.addEventListener('keydown', (e) => {
-      if (isSpeaking) return; 
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
-      const key = e.key.toLowerCase();
-      
-      if (key === '1' || key === 'a') markCurrent('known');
-      else if (key === '2' || key === 's') markCurrent('unknown');
-      else if (key === '3' || key === 'd') markCurrent('review');
-      else if (key === ' ' || key === 'w') { 
-        if (studyType === 'TEST') {
-          e.preventDefault(); 
-          toggleAnswer(); 
-        }
-      }
-      else if (key === 'q') prevWord();
-      else if (key === 'e') nextWord();
-      else if (key === 'p') togglePauseModal();
-      else if (key === 'r') resetAll();
-      else if (key === 'n') startLearning(); 
-      else if (key === 'o') {                
-        if (currentMode === 'FULL') startReviewMode();
-        else returnToFullMode();
-      }
-      else if (key === 'escape') {
-        const pModal = document.getElementById('pauseModal');
-        if (pModal) pModal.style.display = 'none';
-      }
+    function startReviewMode() {
+      const targets = wordList.filter(w => statusMap[getWordKey(w.id)] === 'unknown' || statusMap[getWordKey(w.id)] === 'review');
+      if (targets.length === 0) { alert("오답/재확인 단어가 없습니다."); return; }
+      clearAllTimers();
+      currentMode = 'REVIEW';
+      activeList = [...targets];
+      shuffleArray(activeList);
+      currentIndex = 0;
+      updateCard();
+    }
+
+    function returnToFullMode() {
+      clearAllTimers();
+      currentMode = 'FULL';
+      activeList = [...fullActiveList];
+      currentIndex = 0;
+      updateCard();
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+      const k = e.key.toLowerCase();
+      if (k === '1' || k === 'a') markCurrent('known');
+      if (k === '2' || k === 's') markCurrent('unknown');
+      if (k === '3' || k === 'd') markCurrent('review');
+      if (k === ' ' || k === 'w') { e.preventDefault(); toggleAnswer(); }
+      if (k === 'q') prevWord();
+      if (k === 'e') nextWord();
+      if (k === 'p') togglePauseModal();
+      if (k === 'r') resetAll();
+      if (k === 'n') startLearning();
     });
 
-    init();
+    window.onload = () => {
+      initCategorySelector();
+      loadCategoryData();
+      initMobileResizer();
+    };
   </script>
 </body>
 </html>
