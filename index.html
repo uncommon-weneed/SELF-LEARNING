@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>수어 단어 무한 셔플 & 오답노트 암기장 (동작 미러링 & 미디어 트레이너)</title>
+  <title>수어 단어 무한 셔플 & 오답노트 암기장 (멀티 탭 & 모니터링 지원)</title>
 
   <!-- MediaPipe Holistic & Drawing Utils CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
@@ -23,16 +23,69 @@
       min-height: 100vh; 
       background: #f1f5f9; 
       margin: 0; 
-      padding: 20px 0 0 0; 
+      padding: 0; 
       box-sizing: border-box; 
     }
     
+    /* ★ 상단 멀티 탭 UI ★ */
+    .tab-bar {
+      width: 100%;
+      display: flex;
+      background: #cbd5e1;
+      padding: 10px 20px 0 20px;
+      gap: 6px;
+      box-sizing: border-box;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .tab {
+      padding: 12px 18px;
+      background: #94a3b8;
+      border-radius: 12px 12px 0 0;
+      cursor: pointer;
+      font-weight: 800;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
+      transition: 0.15s;
+      flex-shrink: 0;
+    }
+    .tab:hover {
+      background: #cbd5e1;
+      color: #334155;
+    }
+    .tab.active {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .tab-add {
+      padding: 10px 16px;
+      cursor: pointer;
+      font-weight: 800;
+      color: #4f46e5;
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .tab-add:hover { color: #3730a3; }
+    .tab-close {
+      color: #ef4444;
+      font-size: 0.8rem;
+      cursor: pointer;
+      border-radius: 50%;
+      padding: 2px 6px;
+    }
+    .tab-close:hover { background: #fee2e2; }
+
     .app-wrapper { 
       display: flex; 
       gap: 20px; 
       width: 96%; 
       max-width: 1560px;
       align-items: flex-start; 
+      margin-top: 20px;
       margin-bottom: 30px; 
     }
 
@@ -96,7 +149,7 @@
     .stat-unknown { color: #dc2626; }
     .stat-review { color: #d97706; }
 
-    /* 상단 제어바 */
+    /* 상단 분리형 제어바 */
     .top-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; justify-content: center; }
     .control-box { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.82rem; font-weight: 600; color: #475569; background: #f8fafc; padding: 7px 10px; border-radius: 10px; border: 1px solid #e2e8f0; }
     
@@ -118,7 +171,7 @@
     .btn-order-toggle { border: 1px solid #93c5fd; background: #fff; color: #1e40af; border-radius: 6px; padding: 3px 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: 0.15s; }
     .btn-order-toggle.active { background: #3b82f6; color: #fff; border-color: #2563eb; }
 
-    /* 최상단 전면 배치 단어 헤더 */
+    /* 최상단 전면 배치 단어 배너 */
     .top-word-banner {
       background: #f8fafc;
       border: 2px solid #e2e8f0;
@@ -193,52 +246,10 @@
 
     /* 하단 설명 및 힌트 컨테이너 */
     .detail-container { min-height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 15px; border: 2px dashed #cbd5e1; border-radius: 14px; padding: 16px; position: relative; word-break: keep-all; line-height: 1.5; background: #fff; }
-    .answer-container { display: flex; flex-direction: column; gap: 10px; width: 100%; text-align: left; }
+    .answer-container { display: flex; flex-direction: column; gap: 12px; width: 100%; text-align: left; }
     .desc-text { font-size: 0.95rem; font-weight: 500; color: #334155; background: #f8fafc; padding: 12px 14px; border-radius: 10px; box-sizing: border-box; line-height: 1.55; border: 1px solid #e2e8f0; }
 
     .mirrored { transform: scaleX(-1) !important; }
-
-    .fingerspell-box {
-      padding: 10px 14px;
-      background: #fdf4ff;
-      border: 1.5px solid #f0abfc;
-      border-radius: 12px;
-      text-align: left;
-      font-size: 0.88rem;
-    }
-    .fingerspell-title {
-      font-weight: 700;
-      color: #86198f;
-      margin-bottom: 6px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .fingerspell-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-    .jamo-card {
-      background: #ffffff;
-      border: 1px solid #e879f9;
-      border-radius: 6px;
-      padding: 4px 8px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-    }
-    .jamo-char {
-      font-size: 1.1rem;
-      font-weight: 800;
-      color: #a21caf;
-    }
-    .jamo-name {
-      font-size: 0.68rem;
-      color: #64748b;
-      margin-top: 1px;
-    }
 
     .dict-link-wrap { text-align: center; margin-top: 4px; }
     .dict-link-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: #4f46e5; color: #ffffff; text-decoration: none; border-radius: 10px; font-size: 0.85rem; font-weight: 700; box-shadow: 0 3px 6px rgba(79, 70, 229, 0.25); transition: 0.15s ease; }
@@ -335,6 +346,11 @@
 </head>
 <body>
 
+  <!-- ★ 상단 멀티 탭 영역 ★ -->
+  <div class="tab-bar" id="tabBar">
+    <!-- 동적으로 탭 추가/렌더링 됨 -->
+  </div>
+
   <!-- 환영 대시보드 -->
   <div class="welcome-overlay" id="welcomeOverlay">
     <div class="welcome-card">
@@ -344,16 +360,16 @@
         <label style="font-size:0.85rem; font-weight:700; color:#475569;">학습 모드 선택</label>
         <div class="welcome-mode-select">
           <button type="button" class="btn-mode-choice active" id="btnChoiceTest" onclick="selectInitialStudyType('TEST')">
-            📝 시험 모드
+            📝 시험 모드 [1]
             <span style="font-size:0.72rem; color:#64748b;">단어명 확인 후 정답 열기</span>
           </button>
           <button type="button" class="btn-mode-choice" id="btnChoiceVocab" onclick="selectInitialStudyType('VOCAB')">
-            📖 단어장 모드
+            📖 단어장 모드 [2]
             <span style="font-size:0.72rem; color:#64748b;">정답 처음부터 공개</span>
           </button>
         </div>
       </div>
-      <button class="btn-start-app" onclick="enterStudyRoom()">단어장 바로 시작하기 ✨</button>
+      <button class="btn-start-app" onclick="enterStudyRoom()">단어장 바로 시작하기 ✨ [Enter]</button>
     </div>
   </div>
 
@@ -413,7 +429,7 @@
         <span class="stat-review">재확인: <b id="cntReview">0</b></span>
       </div>
 
-      <!-- 상단 분리형 제어바 (재생/정지, 반복 횟수, 음성 횟수 완벽 지원) -->
+      <!-- 상단 분리형 제어바 (1~5초 타이머 및 1~5회 반복 완벽 적용) -->
       <div class="top-controls">
         <div class="control-box type-switch-box">
           <span>모드:</span>
@@ -434,35 +450,40 @@
             <option value="1.5">1.5x</option>
           </select>
 
-          <!-- 영상 반복 횟수 선택 -->
+          <!-- 1~5회 반복 지원 -->
           <select id="videoLoopCountSelect" onchange="changeVideoLoopCount(this.value)" style="border: 1px solid #5eead4; border-radius: 4px; outline: none; padding: 2px 4px; font-size: 0.8rem; background: #fff;" title="동영상 반복 재생 횟수">
-            <option value="999" selected>영상: 무한</option>
             <option value="1">영상: 1회</option>
             <option value="2">영상: 2회</option>
             <option value="3">영상: 3회</option>
+            <option value="4">영상: 4회</option>
             <option value="5">영상: 5회</option>
+            <option value="999" selected>영상: 무한</option>
           </select>
 
-          <button id="btnWebcam" class="btn-type-toggle" onclick="toggleHolisticWebcam()" style="background:#0f172a; color:#fff;" title="상체 위치 및 손가락 관절 미러링 캠">📷 동작 캠</button>
+          <button id="btnWebcam" class="btn-type-toggle" onclick="toggleHolisticWebcam()" style="background:#0f172a; color:#fff;" title="신체 및 양손 스켈레톤 미러링 캠">📷 동작 캠</button>
         </div>
 
+        <!-- ★ 1~5초 설정 타이머 (정답 자동 열기) -->
         <div class="control-box timer-reveal-box" id="revealTimerBox">
           <label style="cursor:pointer;"><input type="checkbox" id="useRevealTimer" onchange="initTimers()"> ⏱️ 자동 열기</label>
           <select id="revealSecs" onchange="initTimers()">
             <option value="1">1초</option>
             <option value="2">2초</option>
             <option value="3" selected>3초</option>
+            <option value="4">4초</option>
             <option value="5">5초</option>
           </select>
           <span id="revealCountdown" class="timer-badge badge-reveal-cd">-</span>
         </div>
 
+        <!-- ★ 1~5초 설정 타이머 (다음 문제 넘김) -->
         <div class="control-box timer-next-box">
           <label style="cursor:pointer;"><input type="checkbox" id="useNextTimer" onchange="initTimers()"> ⏭️ 자동 넘김</label>
           <select id="nextSecs" onchange="initTimers()">
             <option value="1">1초</option>
             <option value="2" selected>2초</option>
             <option value="3">3초</option>
+            <option value="4">4초</option>
             <option value="5">5초</option>
           </select>
           <span id="nextCountdown" class="timer-badge badge-next-cd">-</span>
@@ -479,7 +500,7 @@
           <input type="range" id="imgScale" min="0.6" max="2.5" step="0.1" value="1.0" oninput="changeImgSize(this.value)" title="사전 영상 및 AI 캠 뷰포트 크기 조절">
         </div>
 
-        <!-- TTS 음성 제어박스 (반복 횟수 추가) -->
+        <!-- TTS 음성 제어박스 -->
         <div class="control-box" style="background:#fefce8; border-color:#fde047; gap:6px;">
           <span>🗣️:</span>
           <select id="ttsVoiceSelect" style="border: 1px solid #facc15; border-radius: 4px; outline: none; padding: 2px 4px; font-size: 0.8rem; background: #fff;"></select>
@@ -491,11 +512,12 @@
             <option value="1.5">1.5배</option>
           </select>
 
-          <!-- TTS 음성 반복 횟수 선택 -->
+          <!-- 1~5회 음성 반복 횟수 선택 -->
           <select id="ttsRepeatCountSelect" style="border: 1px solid #facc15; border-radius: 4px; outline: none; padding: 2px 4px; font-size: 0.8rem; background: #fff;" title="음성 반복 재생 횟수">
             <option value="1" selected>음성: 1회</option>
             <option value="2">음성: 2회</option>
             <option value="3">음성: 3회</option>
+            <option value="4">음성: 4회</option>
             <option value="5">음성: 5회</option>
           </select>
 
@@ -506,13 +528,13 @@
         </div>
       </div>
 
-      <!-- ★ 최상단 전면 배치 단어 헤더 바 ★ -->
+      <!-- 최상단 전면 배치 단어 헤더 바 -->
       <div class="top-word-banner" id="topWordBanner">
         <div class="top-word-title" id="topWordTitle">단어를 불러오는 중...</div>
         <div id="topStatusTag"></div>
       </div>
 
-      <!-- 듀얼 뷰포트 (PC: 사전 영상과 AI 캠 1:1 나란히 배치) -->
+      <!-- 듀얼 뷰포트 (PC: 사전 영상과 동작 캠 1:1 나란히 배치) -->
       <div class="dual-viewport-grid" id="dualGrid">
         <!-- 1. 표준 사전 동영상 뷰어 -->
         <div class="viewport-box" id="dictViewport">
@@ -520,7 +542,7 @@
           <div id="dictMediaTarget" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center;"></div>
         </div>
 
-        <!-- 2. 순수 신체/양손 스켈레톤 미러링 캠 (체크/채점 UI 완전 제거) -->
+        <!-- 2. 신체 및 양손 관절 스켈레톤 미러링 캠 -->
         <div class="viewport-box webcam-live" id="webcamViewport" style="display:none;">
           <span class="vp-label" style="background: rgba(22, 101, 52, 0.85);">🤖 내 동작 스켈레톤 미러링</span>
           <video id="mpVideoFeed" style="display:none;" playsinline muted autoplay></video>
@@ -603,6 +625,8 @@
 
     const CATEGORIES = (typeof SIGN_CATEGORIES !== 'undefined') ? SIGN_CATEGORIES : {};
 
+    // ★ 전역 상태 (Global State) ★
+    // 멀티 탭 구현을 위해 전역 변수들을 개별 탭 객체로 관리하고 활성화된 탭으로 스위칭합니다.
     let currentCatKey = CATEGORY_ORDER[0];
     let wordList = [], fullActiveList = [], activeList = [];
     let currentIndex = 0, savedFullIndex = 0;
@@ -611,63 +635,166 @@
     const statusMap = {}, selectedWords = new Set(), hiddenWords = new Set();
     let isGlobalHidden = false;
 
-    // ★ 체크박스 마우스 드래그 다중 선택 상태 변수 복원
+    // ★ 멀티 탭 시스템 관련 ★
+    let tabs = [];
+    let activeTabId = null;
+    let tabCounter = 0;
+
+    // 마우스 드래그 다중 선택용 변수
     let isSelectingDrag = null;
 
     let ttsVoices = [], isSpeaking = false;
     let isMirrored = false, currentVideoSpeed = 1.0;
-
-    // 동영상 및 음성 반복 제어 상태
     let isVideoPlaying = true;
     let targetVideoLoopCount = 999;
     let currentVideoPlayCount = 0;
 
-    // MediaPipe Holistic 상태
     let isHolisticRunning = false;
     let holistic = null;
     let cameraInstance = null;
 
-    // 한글 분해
-    const CHO_SUNG = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
-    const JUNG_SUNG = ["ㅏ","ㅐ","ㅑ","ㅒ","ㅓ","ㅔ","ㅕ","ㅖ","ㅗ","ㅘ","ㅙ","ㅚ","ㅛ","ㅜ","ㅝ","ㅞ","ㅟ","ㅠ","ㅡ","ㅢ","ㅣ"];
-    const JONG_SUNG = ["","ㄱ","ㄲ","ㄳ","ㄴ","ㄵ","ㄶ","ㄷ","ㄹ","ㄺ","ㄻ","ㄼ","ㄽ","ㄾ","ㄿ","ㅀ","ㅁ","ㅂ","ㅄ","ㅅ","ㅆ","ㅇ","ㅈ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+    // --- 멀티 탭 시스템 함수 --- //
+    function createNewTab() {
+      tabCounter++;
+      const newTabId = 'tab_' + tabCounter;
+      
+      const newTabState = {
+        id: newTabId,
+        name: `새 학습 탭`,
+        currentCatKey: CATEGORY_ORDER[0],
+        wordList: [],
+        fullActiveList: [],
+        activeList: [],
+        currentIndex: 0,
+        savedFullIndex: 0,
+        isRevealed: false,
+        isShuffled: true,
+        currentMode: 'FULL',
+        studyType: 'TEST',
+        statusMap: {},
+        selectedWords: new Set(),
+        hiddenWords: new Set(),
+        isGlobalHidden: false
+      };
+      tabs.push(newTabState);
 
-    function decomposeHangul(word) {
-      const results = [];
-      const cleanWord = word.replace(/[^가-힣]/g, '');
-      for (let i = 0; i < cleanWord.length; i++) {
-        const code = cleanWord.charCodeAt(i) - 0xAC00;
-        if (code >= 0 && code <= 11171) {
-          const cho = Math.floor(code / 588);
-          const jung = Math.floor((code - (cho * 588)) / 28);
-          const jong = code % 28;
-          results.push({ type: '초성', char: CHO_SUNG[cho] });
-          results.push({ type: '중성', char: JUNG_SUNG[jung] });
-          if (jong > 0) results.push({ type: '종성', char: JONG_SUNG[jong] });
-        }
+      if (!activeTabId) {
+        activeTabId = newTabId;
+        loadCategoryData(); // 최초 로드
+      } else {
+        switchTab(newTabId);
+        loadCategoryData(); // 빈 탭에 데이터 채우기
       }
-      return results;
     }
 
-    function getFingerspellHtml(text) {
-      const clean = text.replace(/^\d+\s*/, '').split(',')[0].trim();
-      const jamos = decomposeHangul(clean);
-      if (jamos.length === 0) return '';
-      const listHtml = jamos.map(j => `
-        <div class="jamo-card">
-          <span class="jamo-char">${j.char}</span>
-          <span class="jamo-name">${j.type}</span>
-        </div>
-      `).join('');
-      return `
-        <div class="fingerspell-box">
-          <div class="fingerspell-title">🖐️ 지문자 자모 분해 (${clean})</div>
-          <div class="fingerspell-list">${listHtml}</div>
-        </div>
-      `;
+    function saveCurrentTabState() {
+      if (!activeTabId) return;
+      const tab = tabs.find(t => t.id === activeTabId);
+      if (tab) {
+        tab.currentCatKey = currentCatKey;
+        tab.wordList = [...wordList];
+        tab.fullActiveList = [...fullActiveList];
+        tab.activeList = [...activeList];
+        tab.currentIndex = currentIndex;
+        tab.savedFullIndex = savedFullIndex;
+        tab.isRevealed = isRevealed;
+        tab.isShuffled = isShuffled;
+        tab.currentMode = currentMode;
+        tab.studyType = studyType;
+        
+        tab.statusMap = JSON.parse(JSON.stringify(statusMap));
+        
+        tab.selectedWords = new Set(selectedWords);
+        tab.hiddenWords = new Set(hiddenWords);
+        tab.isGlobalHidden = isGlobalHidden;
+      }
     }
 
-    // --- ★ 순수 신체 및 양손 관절 스켈레톤 미러링 캠 (채점 HUD 완전 제거) ★ ---
+    function loadTabState(tabId) {
+      const tab = tabs.find(t => t.id === tabId);
+      if (!tab) return;
+      
+      currentCatKey = tab.currentCatKey;
+      wordList = [...tab.wordList];
+      fullActiveList = [...tab.fullActiveList];
+      activeList = [...tab.activeList];
+      currentIndex = tab.currentIndex;
+      savedFullIndex = tab.savedFullIndex;
+      isRevealed = tab.isRevealed;
+      isShuffled = tab.isShuffled;
+      currentMode = tab.currentMode;
+      studyType = tab.studyType;
+      
+      Object.keys(statusMap).forEach(k => delete statusMap[k]);
+      Object.assign(statusMap, tab.statusMap);
+      
+      selectedWords.clear();
+      tab.selectedWords.forEach(v => selectedWords.add(v));
+      
+      hiddenWords.clear();
+      tab.hiddenWords.forEach(v => hiddenWords.add(v));
+      
+      isGlobalHidden = tab.isGlobalHidden;
+      const ghc = document.getElementById('globalHideCheck');
+      if (ghc) ghc.checked = isGlobalHidden;
+      
+      document.getElementById('catSelect').value = currentCatKey;
+      setStudyType(studyType);
+      updateOrderButtonUI();
+      renderSidebar();
+      updateCard();
+    }
+
+    function switchTab(tabId) {
+      if (activeTabId === tabId) return;
+      clearAllTimers();
+      saveCurrentTabState();
+      activeTabId = tabId;
+      loadTabState(tabId);
+      renderTabsUI();
+    }
+
+    function closeTab(tabId, e) {
+      e.stopPropagation();
+      if (tabs.length <= 1) {
+        alert("마지막 탭은 닫을 수 없습니다.");
+        return;
+      }
+      const idx = tabs.findIndex(t => t.id === tabId);
+      tabs.splice(idx, 1);
+      
+      if (activeTabId === tabId) {
+        const nextTab = tabs[Math.max(0, idx - 1)];
+        switchTab(nextTab.id);
+      } else {
+        renderTabsUI();
+      }
+    }
+
+    function renderTabsUI() {
+      const tabBar = document.getElementById('tabBar');
+      if (!tabBar) return;
+      tabBar.innerHTML = '';
+      
+      tabs.forEach(tab => {
+        const t = document.createElement('div');
+        t.className = `tab ${tab.id === activeTabId ? 'active' : ''}`;
+        t.innerHTML = `
+          <span onclick="switchTab('${tab.id}')">${tab.name}</span>
+          ${tabs.length > 1 ? `<span class="tab-close" onclick="closeTab('${tab.id}', event)">✕</span>` : ''}
+        `;
+        tabBar.appendChild(t);
+      });
+      
+      const addBtn = document.createElement('div');
+      addBtn.className = 'tab-add';
+      addBtn.innerText = '+ 새 탭';
+      addBtn.onclick = createNewTab;
+      tabBar.appendChild(addBtn);
+    }
+    // --- 멀티 탭 시스템 끝 --- //
+
+    // --- 신체 및 양손 스켈레톤 미러링 캠 ---
     async function toggleHolisticWebcam() {
       const btn = document.getElementById('btnWebcam');
       const grid = document.getElementById('dualGrid');
@@ -676,7 +803,7 @@
 
       if (!isHolisticRunning) {
         try {
-          btn.innerText = "⏳ AI 로딩중...";
+          btn.innerText = "⏳ 로딩중...";
           vp.style.display = 'flex';
           grid.classList.add('dual-active');
 
@@ -769,7 +896,6 @@
       applyVideoStyles();
     }
 
-    // ★ 영상 재생/일시정지 토글 기능
     function toggleVideoPlayPause() {
       const vid = document.querySelector('#dictMediaTarget video');
       const btn = document.getElementById('btnVideoPlayPause');
@@ -786,7 +912,6 @@
       }
     }
 
-    // ★ 영상 반복 횟수 설정 기능
     function changeVideoLoopCount(val) {
       targetVideoLoopCount = parseInt(val) || 999;
       currentVideoPlayCount = 0;
@@ -802,7 +927,6 @@
       if (isMirrored) vid.classList.add('mirrored');
       else vid.classList.remove('mirrored');
 
-      // 반복 횟수 처리 이벤트 리스너 부착
       vid.onended = () => {
         currentVideoPlayCount++;
         if (currentVideoPlayCount < targetVideoLoopCount) {
@@ -856,7 +980,6 @@
       window.speechSynthesis.onvoiceschanged = loadVoices;
     }
 
-    // ★ 음성(TTS) 반복 재생 횟수 지원 함수
     function speakCurrentWord(onEndCallback) {
       if (!('speechSynthesis' in window) || activeList.length === 0) {
         if (onEndCallback) onEndCallback();
@@ -888,7 +1011,7 @@
         utterance.onend = () => {
           currentRepeat++;
           if (currentRepeat < totalRepeats) {
-            setTimeout(speakOnce, 250); // 반복 간 0.25초 휴지기
+            setTimeout(speakOnce, 250);
           } else {
             isSpeaking = false;
             if (onEndCallback) onEndCallback();
@@ -983,6 +1106,20 @@
       if (isShuffled) shuffleArray(fullActiveList);
       activeList = [...fullActiveList];
       currentIndex = 0;
+      selectedWords.clear();
+      hiddenWords.clear();
+      isGlobalHidden = false;
+      
+      const ghc = document.getElementById('globalHideCheck');
+      if (ghc) ghc.checked = false;
+
+      // 탭 이름 연동 갱신
+      if (activeTabId) {
+        const tab = tabs.find(t => t.id === activeTabId);
+        if (tab) tab.name = cat.title || "새 탭";
+        renderTabsUI();
+      }
+
       renderSidebar();
       updateCard();
     }
@@ -1155,7 +1292,7 @@
 
       if (studyType === 'TEST' && !isRevealed) {
         dictMediaTarget.innerHTML = `<div style="color:#94a3b8; font-size:1.15rem; font-weight:bold;">🎬 [정답 확인]을 누르면 표준 수어 영상이 재생됩니다.</div>`;
-        detailContent.innerHTML = `<div style="color:#64748b; font-size:1rem; font-weight:600;">[Space] 또는 [정답] 버튼을 누르면 상세 설명과 지문자 힌트가 열립니다.</div>`;
+        detailContent.innerHTML = `<div style="color:#64748b; font-size:1rem; font-weight:600;">[Space] 또는 [정답] 버튼을 누르면 상세 설명이 열립니다.</div>`;
       } else {
         if (vidSrc) {
           dictMediaTarget.innerHTML = `<video src="${vidSrc}" autoplay loop muted playsinline></video>`;
@@ -1168,13 +1305,11 @@
         const descText = cat.descriptions ? (cat.descriptions[id] || cat.descriptions[strId]) : '';
         const combText = cat.combinations ? (cat.combinations[id] || cat.combinations[strId]) : '';
         const linkUrl = cat.urls ? (cat.urls[id] || cat.urls[strId]) : '';
-        const fsHtml = getFingerspellHtml(current.text);
 
         detailContent.innerHTML = `
           <div class="answer-container">
             ${descText ? `<div class="desc-text">📖 <b>동작 설명:</b> ${descText}</div>` : ''}
             ${combText ? `<div class="desc-text" style="background:#eef2ff; color:#3730a3;">🔗 <b>단어 결합:</b> ${combText}</div>` : ''}
-            ${fsHtml}
             ${linkUrl ? `<div class="dict-link-wrap"><a href="${linkUrl}" target="_blank" rel="noopener noreferrer" class="dict-link-btn">🌐 국립국어원 사전 상세페이지 보기 ↗</a></div>` : ''}
           </div>
         `;
@@ -1197,7 +1332,7 @@
       updateCard();
     }
 
-    // ★ 단어 목록 체크박스 드래그 다중 선택 이벤트 로직 복원
+    // ★ 단어 목록 체크박스 마우스 드래그 다중 선택 핸들러 복원
     function handleMouseDown(e, id) {
       if (e.target.tagName === 'BUTTON' || e.target.classList.contains('sidebar-badge')) return;
       const cb = document.getElementById(`cb-${id}`);
@@ -1347,7 +1482,17 @@
       updateCard();
     }
 
+    // ★ 키보드 단축키 지원 (시작 오버레이 메뉴 선택 지원) ★
     document.addEventListener('keydown', e => {
+      const overlay = document.getElementById('welcomeOverlay');
+      if (overlay && overlay.style.display !== 'none') {
+        const k = e.key;
+        if (k === '1') selectInitialStudyType('TEST');
+        if (k === '2') selectInitialStudyType('VOCAB');
+        if (k === 'Enter') enterStudyRoom();
+        return; // 오버레이가 떠있을 때는 일반 단축키 차단
+      }
+
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
       const k = e.key.toLowerCase();
       if (k === '1' || k === 'a') markCurrent('known');
@@ -1363,8 +1508,9 @@
 
     window.onload = () => {
       initCategorySelector();
-      loadCategoryData();
+      createNewTab(); // 첫 번째 탭 생성과 동시에 초기화 진행
       initMobileResizer();
+      loadVoices();
     };
   </script>
 </body>
