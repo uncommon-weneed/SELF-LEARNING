@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>수어 단어 암기장 </title>
+  <title>수어 단어 무한 셔플 & 오답노트 암기장 (번호 범위 선택 포함)</title>
 
   <!-- MediaPipe Holistic & Drawing Utils CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
@@ -104,7 +104,6 @@
     .sidebar-controls input[type="text"] { padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-size: 0.85rem; width: 100%; box-sizing: border-box; }
     .sidebar-controls input[type="text"]:focus { border-color: #6366f1; }
     
-    /* ★ 번호 범위 입력 박스 스타일 복원 ★ */
     .range-select-box { display: flex; gap: 4px; align-items: center; background: #f8fafc; padding: 6px; border-radius: 8px; border: 1px solid #cbd5e1; }
     .range-select-box input { width: 65px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center; font-size: 0.8rem; outline: none; }
     .range-select-box button { padding: 4px 8px; background: #3b82f6; color: #fff; border: none; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
@@ -208,7 +207,7 @@
       filter: brightness(1.05);
     }
 
-    /* 최상단 단어 배너 */
+    /* 최상단 단어 배너 및 상태 박스 */
     .top-word-banner {
       background: #f8fafc;
       border: 2px solid #e2e8f0;
@@ -221,6 +220,8 @@
       position: relative;
       box-sizing: border-box;
       width: 100%;
+      flex-wrap: wrap;
+      gap: 10px;
     }
     .top-word-title {
       font-size: 1.45rem;
@@ -228,8 +229,32 @@
       color: #0f172a;
       letter-spacing: -0.02em;
     }
+    .quick-mark-group {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .q-mark {
+      padding: 5px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      cursor: pointer;
+      background: #ffffff;
+      transition: 0.15s;
+    }
+    .q-mark:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .q-mark.known { color: #16a34a; border-color: #22c55e; }
+    .q-mark.known.active { background: #22c55e; color: #fff; }
+    .q-mark.unknown { color: #dc2626; border-color: #ef4444; }
+    .q-mark.unknown.active { background: #ef4444; color: #fff; }
+    .q-mark.review { color: #d97706; border-color: #f59e0b; }
+    .q-mark.review.active { background: #f59e0b; color: #fff; }
+    .q-mark.uncheck { color: #64748b; border-color: #94a3b8; }
+    .q-mark.uncheck.active { background: #94a3b8; color: #fff; }
 
-    /* 듀얼 미디어 레이아웃 (PC 1:1 분할) */
+    /* 듀얼 뷰포트 */
     .dual-viewport-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -286,7 +311,68 @@
     }
 
     /* 하단 설명 컨테이너 */
-    .detail-container { min-height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 15px; border: 2px dashed #cbd5e1; border-radius: 14px; padding: 16px; position: relative; word-break: keep-all; line-height: 1.5; background: #fff; box-sizing: border-box; width: 100%; }
+    .detail-wrapper {
+      position: relative;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 15px;
+    }
+    .desc-toggle-btn {
+      background: #e2e8f0;
+      border: 1px solid #cbd5e1;
+      color: #475569;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      cursor: pointer;
+      align-self: flex-end;
+      margin-bottom: 6px;
+      transition: 0.15s;
+    }
+    .desc-toggle-btn:hover { background: #cbd5e1; color: #334155; }
+    
+    .detail-container {
+      height: 120px;
+      overflow-y: auto;
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      border: 2px dashed #cbd5e1; 
+      border-bottom: none;
+      border-radius: 14px 14px 0 0; 
+      padding: 16px; 
+      word-break: keep-all; 
+      line-height: 1.5; 
+      background: #fff; 
+      box-sizing: border-box; 
+      width: 100%;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    .detail-resizer {
+      width: 100%;
+      height: 16px;
+      background: #f1f5f9;
+      border: 2px dashed #cbd5e1;
+      border-top: 1px solid #e2e8f0;
+      border-radius: 0 0 14px 14px;
+      cursor: row-resize;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-sizing: border-box;
+      touch-action: none;
+    }
+    .detail-resizer::after {
+      content: '';
+      width: 40px;
+      height: 4px;
+      background: #94a3b8;
+      border-radius: 2px;
+    }
+
     .answer-container { display: flex; flex-direction: column; gap: 10px; width: 100%; text-align: left; }
     .desc-text { font-size: 0.95rem; font-weight: 500; color: #334155; background: #f8fafc; padding: 12px 14px; border-radius: 10px; box-sizing: border-box; line-height: 1.55; border: 1px solid #e2e8f0; }
 
@@ -546,7 +632,6 @@
       <div class="sidebar-controls">
         <input type="text" id="searchInput" placeholder="🔍 현재 과 단어 검색..." oninput="renderSidebar()">
         
-        <!-- ★ 번호 범위 체크 기능 복원 (예: 1~50) ★ -->
         <div class="range-select-box">
           <input type="number" id="rangeStart" placeholder="시작" min="1">
           <span>~</span>
@@ -613,7 +698,6 @@
           <button id="btnNumeric" class="btn-order-toggle" onclick="sortCurrentListNumeric()">🔢 번호순</button>
         </div>
 
-        <!-- ★ 크기 조절 슬라이더 외부 직접 배치 ★ -->
         <div class="control-box">
           <label for="imgScale">🔍 크기:</label>
           <input type="range" id="imgScale" min="0.6" max="2.5" step="0.1" value="1.0" oninput="changeImgSize(this.value)" title="사전 영상 및 캠 뷰포트 크기 조절">
@@ -628,13 +712,18 @@
         </button>
       </div>
 
-      <!-- 최상단 전면 배치 단어 헤더 바 -->
+      <!-- 최상단 전면 배치 단어 헤더 바 & 단어 옆 상태 박스 -->
       <div class="top-word-banner" id="topWordBanner">
         <div class="top-word-title" id="topWordTitle">단어를 불러오는 중...</div>
-        <div id="topStatusTag"></div>
+        <div class="quick-mark-group" id="quickMarkGroup">
+          <button id="qm-known" class="q-mark known" onclick="markCurrent('known')" title="아는 문제로 체크">아는</button>
+          <button id="qm-unknown" class="q-mark unknown" onclick="markCurrent('unknown')" title="모르는 문제로 체크">모르는</button>
+          <button id="qm-review" class="q-mark review" onclick="markCurrent('review')" title="재확인 문제로 체크">재확인</button>
+          <button id="qm-uncheck" class="q-mark uncheck" onclick="markCurrent('none')" title="체크 해제">미체크</button>
+        </div>
       </div>
 
-      <!-- 듀얼 뷰포트 (PC: 사전 영상과 동작 캠 1:1 나란히 배치) -->
+      <!-- 듀얼 뷰포트 -->
       <div class="dual-viewport-grid" id="dualGrid">
         <div class="viewport-box" id="dictViewport">
           <span class="vp-label">🎬 국립국어원 표준 수어 영상</span>
@@ -644,13 +733,17 @@
         <div class="viewport-box webcam-live" id="webcamViewport" style="display:none;">
           <span class="vp-label" style="background: rgba(22, 101, 52, 0.85);">🤖 내 동작 스켈레톤 미러링</span>
           <video id="mpVideoFeed" style="display:none;" playsinline muted autoplay></video>
-          <canvas id="mpCanvasFeed" width="640" height="480"></canvas>
+          <canvas id="mpCanvasFeed" width="320" height="240"></canvas>
         </div>
       </div>
 
       <!-- 하단 설명 및 힌트 컨테이너 -->
-      <div class="detail-container" id="detailContainer">
-        <div id="detailContent">학습할 단어를 선택하거나 시작 버튼을 누르세요</div>
+      <div class="detail-wrapper">
+        <button id="btnToggleDesc" class="desc-toggle-btn" onclick="toggleDescVisibility()">🔽 설명창 숨기기</button>
+        <div class="detail-container" id="detailContainer">
+          <div id="detailContent">학습할 단어를 선택하거나 시작 버튼을 누르세요</div>
+        </div>
+        <div class="detail-resizer" id="descResizer" title="상하로 드래그하여 설명창 높이 조절"></div>
       </div>
       
       <div class="btn-group">
@@ -666,14 +759,16 @@
       </div>
 
       <button class="btn-start" onclick="startLearning()">▶️ 처음부터 새로 학습 시작 (셔플) [N]</button>
-      <button class="btn-full-mode" id="btnFullMode" onclick="returnToFullMode()" style="display: none;">🏠 전체 모드로 돌아가기 [O]</button>
-      <button class="btn-review-mode" id="btnReviewMode" onclick="startReviewMode()">✏️ 오답노트 풀기 (모름/재확인) [O]</button>
+      <button class="btn-review-mode" id="btnReviewMode" onclick="startReviewMode()">✏️ 오답노트(모름/재확인) 진입 [O]</button>
+      <button class="btn-full-mode" id="btnFullMode" onclick="returnToFullMode()" style="display: none;">🏠 전체메뉴로 돌아가기 [I]</button>
+      
       <button class="btn-pause" onclick="togglePauseModal()">⏸️ 중간 결과 및 미체크 문제 확인 [P]</button>
       <button class="btn-reset" onclick="resetAll()">현재 카테고리 마킹 초기화 및 셔플 [R]</button>
 
       <div class="shortcut-info">
-        ⌨️ <b>단축키 안내:</b> 1/A (아는 문제), 2/S (모르는 문제), 3/D (재확인), Space/W (정답 열기), Q/E (이전/다음)<br>
-        • <b>번호 범위 체크:</b> 좌측 상단에 시작과 끝 번호(예: 1~50)를 입력하고 [범위체크]를 누르면 해당 범위의 단어들이 한 번에 선택됩니다[cite: 6].
+        ⌨️ <b>단축키 안내:</b> 1/A (아는), 2/S (모름), 3/D (재확인) | Space/W (정답 열기) | Q/E (이전/다음)<br>
+        • <b>모드 전환:</b> [O] 오답노트 진입, [I] 전체메뉴 복귀 <br>
+        • <b>번호 범위 체크:</b> 좌측 상단에 시작과 끝 번호(예: 1~50)를 입력하고 [범위체크]를 누르면 한 번에 선택됩니다[cite: 1].
       </div>
     </div>
   </div>
@@ -830,7 +925,6 @@
     let tabs = [];
     let activeTabId = null;
     let tabCounter = 0;
-
     let isSelectingDrag = null;
 
     let ttsVoices = [], isSpeaking = false;
@@ -842,6 +936,7 @@
     let isHolisticRunning = false;
     let holistic = null;
     let cameraInstance = null;
+    let lastProcessedTime = 0;
 
     function toggleSettingsModal(show) {
       const modal = document.getElementById('settingsModal');
@@ -986,7 +1081,7 @@
       tabBar.appendChild(addBtn);
     }
 
-    // --- 신체 및 양손 스켈레톤 미러링 캠 ---
+    // --- 동작 캠 (MediaPipe Holistic 경량화 설정) ---
     async function toggleHolisticWebcam() {
       const btn = document.getElementById('btnWebcam');
       const grid = document.getElementById('dualGrid');
@@ -1003,6 +1098,7 @@
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`
           });
 
+          // 모바일 및 저사양 환경을 고려한 인퍼런스 경량화
           holistic.setOptions({
             modelComplexity: 0,
             smoothLandmarks: true,
@@ -1018,25 +1114,29 @@
             ctx.clearRect(0, 0, canvasElem.width, canvasElem.height);
             ctx.drawImage(results.image, 0, 0, canvasElem.width, canvasElem.height);
 
+            // 모바일 렌더링 부담을 줄이기 위한 라이트 그린/블루 경량 드로잉
             if (results.poseLandmarks) {
-              drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, { color: '#ffffff', lineWidth: 2 });
-              drawLandmarks(ctx, results.poseLandmarks, { color: '#38bdf8', lineWidth: 1, radius: 2 });
+              drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS, { color: '#ffffff', lineWidth: 1.5 });
+              drawLandmarks(ctx, results.poseLandmarks, { color: '#38bdf8', lineWidth: 1, radius: 1.5 });
             }
             if (results.rightHandLandmarks) {
-              drawConnectors(ctx, results.rightHandLandmarks, HAND_CONNECTIONS, { color: '#4ade80', lineWidth: 2 });
-              drawLandmarks(ctx, results.rightHandLandmarks, { color: '#22c55e', lineWidth: 1, radius: 2 });
+              drawConnectors(ctx, results.rightHandLandmarks, HAND_CONNECTIONS, { color: '#4ade80', lineWidth: 1.5 });
+              drawLandmarks(ctx, results.rightHandLandmarks, { color: '#22c55e', lineWidth: 1, radius: 1.5 });
             }
             if (results.leftHandLandmarks) {
-              drawConnectors(ctx, results.leftHandLandmarks, HAND_CONNECTIONS, { color: '#facc15', lineWidth: 2 });
-              drawLandmarks(ctx, results.leftHandLandmarks, { color: '#eab308', lineWidth: 1, radius: 2 });
+              drawConnectors(ctx, results.leftHandLandmarks, HAND_CONNECTIONS, { color: '#facc15', lineWidth: 1.5 });
+              drawLandmarks(ctx, results.leftHandLandmarks, { color: '#eab308', lineWidth: 1, radius: 1.5 });
             }
 
             ctx.restore();
           });
 
+          // 모바일 연산 부하 방지: 프레임 스킵 루프 (약 15 FPS 제어)
           cameraInstance = new Camera(videoElem, {
             onFrame: async () => {
-              if (isHolisticRunning && videoElem) {
+              const now = Date.now();
+              if (isHolisticRunning && videoElem && (now - lastProcessedTime > 65)) {
+                lastProcessedTime = now;
                 await holistic.send({ image: videoElem });
               }
             },
@@ -1050,7 +1150,7 @@
           btn.style.background = "#ef4444";
         } catch (err) {
           console.error(err);
-          alert("카메라 실행 실패: 로컬 웹서버(VS Code Live Server 등) 환경에서 실행해주세요.");
+          alert("카메라 실행 실패: 로컬 웹서버 환경에서 실행해 주세요.");
           btn.innerText = "📷 동작 캠";
           btn.style.background = "#0f172a";
           vp.style.display = 'none';
@@ -1124,12 +1224,8 @@
           if (btn) btn.innerText = "▶️ 재생";
         }
       };
-
-      if (targetVideoLoopCount >= 999) {
-        vid.loop = true;
-      } else {
-        vid.loop = false;
-      }
+      if (targetVideoLoopCount >= 999) vid.loop = true;
+      else vid.loop = false;
 
       if (isVideoPlaying) {
         vid.play().catch(() => {});
@@ -1162,18 +1258,16 @@
         voiceSelect.appendChild(opt);
       });
     }
-
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.onvoiceschanged = loadVoices;
-    }
+    if ('speechSynthesis' in window) { window.speechSynthesis.onvoiceschanged = loadVoices; }
 
     function speakCurrentWord(onEndCallback) {
       if (!('speechSynthesis' in window) || activeList.length === 0) {
         if (onEndCallback) onEndCallback();
         return;
       }
-
       const current = activeList[currentIndex];
+      if (!current) { if (onEndCallback) onEndCallback(); return; }
+      
       const firstWord = current.text.replace(/^\d+\s*/, '').split(',')[0].trim();
       const repeatSelect = document.getElementById('ttsRepeatCountSelect');
       const totalRepeats = repeatSelect ? parseInt(repeatSelect.value) : 1;
@@ -1185,10 +1279,8 @@
       function speakOnce() {
         const utterance = new SpeechSynthesisUtterance(firstWord);
         utterance.lang = 'ko-KR';
-
         const rateSelect = document.getElementById('ttsRateSelect');
         utterance.rate = rateSelect ? parseFloat(rateSelect.value) : 1.0;
-
         const voiceSelect = document.getElementById('ttsVoiceSelect');
         if (voiceSelect && voiceSelect.value !== '') {
           const koreanVoices = ttsVoices.filter(v => v.lang.includes('ko') || v.lang.includes('KR'));
@@ -1204,15 +1296,9 @@
             if (onEndCallback) onEndCallback();
           }
         };
-
-        utterance.onerror = () => {
-          isSpeaking = false;
-          if (onEndCallback) onEndCallback();
-        };
-
+        utterance.onerror = () => { isSpeaking = false; if (onEndCallback) onEndCallback(); };
         window.speechSynthesis.speak(utterance);
       }
-
       speakOnce();
     }
 
@@ -1234,11 +1320,8 @@
       document.getElementById('btnSwitchVocab').className = `btn-type-toggle ${type==='VOCAB'?'active':''}`;
       document.getElementById('studyTypeBadge').innerText = type==='TEST' ? '📝 시험 모드' : '📖 단어장 모드';
       document.getElementById('btnReveal').style.display = type==='TEST' ? 'inline-block' : 'none';
-      if (type === 'VOCAB') {
-        isRevealed = true;
-      } else {
-        isRevealed = false;
-      }
+      if (type === 'VOCAB') isRevealed = true;
+      else isRevealed = false;
       updateCard();
     }
 
@@ -1263,6 +1346,58 @@
       window.addEventListener('touchend', () => { isDrag = false; });
     }
 
+    // --- 설명창 드래그 리사이저 로직 ---
+    function initDescResizer() {
+      const resizer = document.getElementById('descResizer');
+      const container = document.getElementById('detailContainer');
+      if (!resizer || !container) return;
+      
+      let startY = 0, startH = 0;
+      
+      const onDrag = (e) => {
+        let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        container.style.height = `${Math.max(60, startH + (clientY - startY))}px`;
+      };
+      
+      const stopDrag = () => {
+        document.removeEventListener('mousemove', onDrag);
+        document.removeEventListener('mouseup', stopDrag);
+        document.removeEventListener('touchmove', onDrag);
+        document.removeEventListener('touchend', stopDrag);
+      };
+
+      resizer.addEventListener('mousedown', (e) => {
+        startY = e.clientY;
+        startH = container.getBoundingClientRect().height;
+        document.addEventListener('mousemove', onDrag);
+        document.addEventListener('mouseup', stopDrag);
+      });
+
+      resizer.addEventListener('touchstart', (e) => {
+        startY = e.touches[0].clientY;
+        startH = container.getBoundingClientRect().height;
+        document.addEventListener('touchmove', onDrag, {passive: false});
+        document.addEventListener('touchend', stopDrag);
+      }, {passive: true});
+    }
+
+    let isDescHidden = false;
+    function toggleDescVisibility() {
+      isDescHidden = !isDescHidden;
+      const container = document.getElementById('detailContainer');
+      const resizer = document.getElementById('descResizer');
+      const btn = document.getElementById('btnToggleDesc');
+      if (isDescHidden) {
+        container.style.display = 'none';
+        resizer.style.display = 'none';
+        btn.innerText = '🔼 설명창 보기';
+      } else {
+        container.style.display = 'flex';
+        resizer.style.display = 'flex';
+        btn.innerText = '🔽 설명창 숨기기';
+      }
+    }
+
     function initCategorySelector() {
       const select = document.getElementById('catSelect');
       select.innerHTML = '';
@@ -1284,6 +1419,11 @@
     function changeCategory(key) {
       clearAllTimers();
       currentCatKey = key;
+      currentMode = 'FULL';
+      document.getElementById('btnFullMode').style.display = 'none';
+      document.getElementById('btnReviewMode').style.display = 'inline-block';
+      document.getElementById('modeName').innerText = '전체 학습 모드';
+      document.getElementById('modeName').classList.remove('review');
       loadCategoryData();
     }
 
@@ -1397,10 +1537,34 @@
     function markCurrent(type) {
       if (activeList.length === 0 || isSpeaking) return;
       const current = activeList[currentIndex];
-      statusMap[getWordKey(current.id)] = type;
+      
+      if (type === 'none') {
+        delete statusMap[getWordKey(current.id)];
+      } else {
+        statusMap[getWordKey(current.id)] = type;
+      }
+      
       updateStats();
+      
+      // 오답노트 모드 중일 때 항목 채점 변경 시 리스트 재계산
+      if (currentMode === 'REVIEW') {
+        const targets = wordList.filter(w => statusMap[getWordKey(w.id)] === 'unknown' || statusMap[getWordKey(w.id)] === 'review');
+        if (targets.length === 0) {
+          alert("오답노트의 모든 단어를 다 학습하셨습니다! 전체 모드로 돌아갑니다.");
+          returnToFullMode();
+          return;
+        }
+        activeList = targets;
+        if (currentIndex >= activeList.length) currentIndex = activeList.length - 1;
+      }
+
       renderSidebar();
-      nextWord();
+
+      if (type !== 'none') {
+        nextWord();
+      } else {
+        updateCard();
+      }
     }
 
     function nextWord() {
@@ -1449,16 +1613,25 @@
     function updateCard() {
       const cat = CATEGORIES[currentCatKey] || {};
       const current = activeList[currentIndex];
-      if (!current) return;
+      
+      if (!current) {
+        document.getElementById('progress').innerText = `단어 0 / 0`;
+        document.getElementById('topWordTitle').innerText = `선택된 학습 단어가 없습니다.`;
+        return;
+      }
 
       const id = current.id;
       const strId = String(id);
       const status = statusMap[getWordKey(id)] || 'none';
 
       document.getElementById('progress').innerText = `단어 ${currentIndex + 1} / ${activeList.length}`;
-      
       document.getElementById('topWordTitle').innerText = `${id}. ${current.text}`;
-      document.getElementById('topStatusTag').innerHTML = `<span class="status-tag tag-${status}" style="position:static;">${status === 'known' ? '아는 문제' : status === 'unknown' ? '모르는 문제' : status === 'review' ? '재확인' : '미체크'}</span>`;
+      
+      document.querySelectorAll('.q-mark').forEach(btn => btn.classList.remove('active'));
+      if (status === 'known') document.getElementById('qm-known').classList.add('active');
+      else if (status === 'unknown') document.getElementById('qm-unknown').classList.add('active');
+      else if (status === 'review') document.getElementById('qm-review').classList.add('active');
+      else document.getElementById('qm-uncheck').classList.add('active');
 
       const dictMediaTarget = document.getElementById('dictMediaTarget');
       let rawVids = cat.videoMap ? (cat.videoMap[id] || cat.videoMap[strId]) : null;
@@ -1512,7 +1685,6 @@
       updateCard();
     }
 
-    // ★ 드래그 다중 선택 핸들러 복원
     function handleMouseDown(e, id) {
       if (e.target.tagName === 'BUTTON' || e.target.classList.contains('sidebar-badge') || e.target.classList.contains('mask-box-btn')) return;
       const cb = document.getElementById(`cb-${id}`);
@@ -1535,36 +1707,36 @@
       if (state) selectedWords.add(id);
       else selectedWords.delete(id);
     }
-
     window.addEventListener('mouseup', () => { isSelectingDrag = null; });
 
-    // ★ 번호 범위 체크 기능 복원 (예: 1~50)
     function checkWordRange() {
       const startVal = parseInt(document.getElementById('rangeStart').value);
       const endVal = parseInt(document.getElementById('rangeEnd').value);
-
       if (isNaN(startVal) || isNaN(endVal)) {
         alert("시작 번호와 끝 번호를 올바르게 입력해주세요.");
         return;
       }
-
       const min = Math.min(startVal, endVal);
       const max = Math.max(startVal, endVal);
-
       wordList.forEach(w => {
-        if (w.id >= min && w.id <= max) {
-          selectedWords.add(w.id);
-        }
+        if (w.id >= min && w.id <= max) selectedWords.add(w.id);
       });
       renderSidebar();
     }
 
+    /* 오답노트 모드 시 오답/재확인 체크 단어만 표시되도록 조절 */
     function renderSidebar() {
       const sidebarList = document.getElementById('sidebarList');
       sidebarList.innerHTML = '';
       const query = (document.getElementById('searchInput')?.value || '').toLowerCase();
       const orderType = document.getElementById('sidebarOrder')?.value || 'study';
-      let displayList = (orderType === 'study') ? [...activeList] : [...wordList];
+
+      let displayList = [];
+      if (currentMode === 'REVIEW') {
+        displayList = [...activeList];
+      } else {
+        displayList = (orderType === 'study') ? [...activeList] : [...wordList];
+      }
 
       displayList.forEach((item) => {
         if (query && !item.text.toLowerCase().includes(query)) return;
@@ -1614,14 +1786,9 @@
       if (activeElem) activeElem.classList.add('active');
     }
 
-    function selectAllFiltered() {
-      wordList.forEach(w => selectedWords.add(w.id));
-      renderSidebar();
-    }
-    function deselectAllFiltered() {
-      selectedWords.clear();
-      renderSidebar();
-    }
+    function selectAllFiltered() { wordList.forEach(w => selectedWords.add(w.id)); renderSidebar(); }
+    function deselectAllFiltered() { selectedWords.clear(); renderSidebar(); }
+    
     function studySelected() {
       if (selectedWords.size === 0) { alert("선택된 단어가 없습니다."); return; }
       clearAllTimers();
@@ -1630,6 +1797,7 @@
       if (isShuffled) shuffleArray(activeList);
       currentIndex = 0;
       updateCard();
+      renderSidebar();
     }
 
     function toggleGlobalHide(val) {
@@ -1637,14 +1805,12 @@
       else hiddenWords.clear();
       renderSidebar();
     }
-
     function toggleHideWord(id, e) {
       e.stopPropagation();
       if (hiddenWords.has(id)) hiddenWords.delete(id);
       else hiddenWords.add(id);
       renderSidebar();
     }
-
     function resetAll() {
       if (confirm("모든 채점 상태를 초기화할까요?")) {
         clearAllTimers();
@@ -1652,7 +1818,6 @@
         loadCategoryData();
       }
     }
-
     function togglePauseModal() {
       const m = document.getElementById('pauseModal');
       m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
@@ -1660,12 +1825,19 @@
 
     function startLearning() {
       clearAllTimers();
+      currentMode = 'FULL';
+      document.getElementById('btnFullMode').style.display = 'none';
+      document.getElementById('btnReviewMode').style.display = 'inline-block';
+      document.getElementById('modeName').innerText = '전체 학습 모드';
+      document.getElementById('modeName').classList.remove('review');
+      
       fullActiveList = [...wordList];
       shuffleArray(fullActiveList);
       activeList = [...fullActiveList];
       currentIndex = 0;
       if (studyType === 'VOCAB') isRevealed = true;
       updateCard();
+      renderSidebar();
     }
 
     function startReviewMode() {
@@ -1677,7 +1849,14 @@
       shuffleArray(activeList);
       currentIndex = 0;
       if (studyType === 'VOCAB') isRevealed = true;
+      
+      document.getElementById('btnFullMode').style.display = 'inline-block';
+      document.getElementById('btnReviewMode').style.display = 'none';
+      document.getElementById('modeName').innerText = '✏️ 오답노트 모드';
+      document.getElementById('modeName').classList.add('review');
+      
       updateCard();
+      renderSidebar();
     }
 
     function returnToFullMode() {
@@ -1686,10 +1865,19 @@
       activeList = [...fullActiveList];
       currentIndex = 0;
       if (studyType === 'VOCAB') isRevealed = true;
+      
+      document.getElementById('btnFullMode').style.display = 'none';
+      document.getElementById('btnReviewMode').style.display = 'inline-block';
+      document.getElementById('modeName').innerText = '전체 학습 모드';
+      document.getElementById('modeName').classList.remove('review');
+      
       updateCard();
+      renderSidebar();
     }
 
     document.addEventListener('keydown', e => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+
       if (e.key === 'Escape') {
         toggleSettingsModal(false);
         const pModal = document.getElementById('pauseModal');
@@ -1706,23 +1894,32 @@
         return;
       }
 
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
       const k = e.key.toLowerCase();
-      if (k === '1' || k === 'a') markCurrent('known');
-      if (k === '2' || k === 's') markCurrent('unknown');
-      if (k === '3' || k === 'd') markCurrent('review');
-      if (k === ' ' || k === 'w') { e.preventDefault(); toggleAnswer(); }
+
+      if (e.key === ' ' || k === 'w') { 
+        e.preventDefault(); 
+        toggleAnswer(); 
+        return; 
+      }
+
+      if (k === '1' || k === 'a') { e.preventDefault(); markCurrent('known'); }
+      if (k === '2' || k === 's') { e.preventDefault(); markCurrent('unknown'); }
+      if (k === '3' || k === 'd') { e.preventDefault(); markCurrent('review'); }
       if (k === 'q') prevWord();
       if (k === 'e') nextWord();
       if (k === 'p') togglePauseModal();
       if (k === 'r') resetAll();
       if (k === 'n') startLearning();
+      
+      if (k === 'o') startReviewMode();
+      if (k === 'i') returnToFullMode();
     });
 
     window.onload = () => {
       initCategorySelector();
       createNewTab();
       initMobileResizer();
+      initDescResizer();
       loadVoices();
     };
   </script>
